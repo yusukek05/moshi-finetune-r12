@@ -1,0 +1,528 @@
+Resolved 96 packages in 2ms
+Audited 85 packages in 0.04ms
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+05/17/2025 17:59:11 - INFO - __main__ - Distributed environment: DistributedType.DEEPSPEED  Backend: nccl
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda:0
+
+Mixed precision type: fp16
+ds_config: {'fp16': {'enabled': True, 'initial_scale_power': 10}, 'optimizer': {'type': 'AdamW', 'params': {'lr': 'auto', 'weight_decay': 'auto', 'betas': [0.9, 0.95], 'eps': 1e-05}}, 'scheduler': {'type': 'WarmupLR', 'params': {'warmup_min_lr': 'auto', 'warmup_max_lr': 'auto', 'warmup_num_steps': 'auto', 'warmup_type': 'linear', 'last_batch_iteration': -1}}, 'zero_optimization': {'stage': 3, 'overlap_comm': True, 'contiguous_gradients': True, 'reduce_bucket_size': 20000000.0, 'stage3_prefetch_bucket_size': 20000000.0, 'stage3_param_persistence_threshold': 50000.0, 'sub_group_size': 1000000000.0, 'stage3_max_live_parameters': 1000000000.0, 'stage3_max_reuse_distance': 1000000000.0, 'stage3_gather_16bit_weights_on_model_save': False}, 'gradient_accumulation_steps': 'auto', 'gradient_clipping': 'auto', 'train_batch_size': 'auto', 'train_micro_batch_size_per_gpu': 'auto', 'wall_clock_breakdown': False, 'activation_checkpointing': {'partition_activations': True}, 'steps_per_print': inf, 'bf16': {'enabled': False}}
+
+05/17/2025 17:59:11 - INFO - __main__ - Loading Moshi model from init_models/moshiko-both_streams-float32
+05/17/2025 18:01:58 - INFO - __main__ - emb.0.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.1.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.2.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.3.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.4.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.5.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.6.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.7.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.8.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.9.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.10.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.11.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.12.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.13.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.14.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - emb.15.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - text_emb.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - text_linear.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.0.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.0.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.0.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.0.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.0.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.0.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.1.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.1.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.1.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.1.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.1.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.1.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.2.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.2.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.2.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.2.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.2.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.2.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.3.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.3.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.3.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.3.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.3.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.3.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.4.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.4.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.4.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.4.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.4.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.4.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.5.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.5.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.5.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.5.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.5.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.5.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.6.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.6.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.6.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.6.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.6.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.6.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.7.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.7.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.7.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.7.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.7.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.7.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.8.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.8.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.8.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.8.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.8.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.8.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.9.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.9.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.9.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.9.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.9.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.9.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.10.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.10.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.10.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.10.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.10.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.10.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.11.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.11.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.11.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.11.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.11.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.11.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.12.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.12.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.12.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.12.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.12.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.12.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.13.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.13.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.13.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.13.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.13.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.13.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.14.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.14.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.14.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.14.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.14.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.14.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.15.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.15.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.15.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.15.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.15.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.15.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.16.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.16.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.16.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.16.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.16.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.16.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.17.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.17.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.17.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.17.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.17.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.17.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.18.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.18.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.18.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.18.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.18.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.18.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.19.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.19.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.19.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.19.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.19.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.19.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.20.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.20.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.20.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.20.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.20.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.20.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.21.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.21.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.21.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.21.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.21.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.21.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.22.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.22.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.22.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.22.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.22.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.22.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.23.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.23.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.23.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.23.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.23.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.23.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.24.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.24.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.24.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.24.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.24.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.24.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.25.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.25.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.25.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.25.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.25.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.25.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.26.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.26.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.26.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.26.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.26.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.26.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.27.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.27.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.27.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.27.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.27.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.27.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.28.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.28.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.28.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.28.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.28.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.28.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.29.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.29.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.29.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.29.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.29.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.29.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.30.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.30.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.30.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.30.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.30.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.30.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.31.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.31.self_attn.out_proj.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.31.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.31.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.31.gating.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - transformer.layers.31.gating.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - out_norm.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.0.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.1.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.2.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.3.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.4.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.5.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.6.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.7.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.8.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.9.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.10.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.11.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.12.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.13.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.14.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_in.15.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.0.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.1.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.2.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.3.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.4.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.5.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.6.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.7.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.8.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.9.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.10.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.11.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.12.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.13.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_emb.14.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer_text_emb.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.self_attn.out_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.0.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.0.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.1.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.1.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.2.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.2.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.3.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.3.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.4.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.4.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.5.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.5.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.6.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.6.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.7.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.7.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.8.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.8.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.9.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.9.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.10.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.10.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.11.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.11.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.12.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.12.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.13.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.13.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.14.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.14.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.15.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.0.gating.15.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.self_attn.out_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.0.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.0.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.1.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.1.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.2.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.2.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.3.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.3.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.4.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.4.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.5.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.5.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.6.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.6.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.7.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.7.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.8.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.8.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.9.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.9.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.10.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.10.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.11.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.11.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.12.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.12.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.13.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.13.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.14.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.14.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.15.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.1.gating.15.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.self_attn.out_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.0.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.0.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.1.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.1.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.2.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.2.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.3.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.3.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.4.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.4.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.5.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.5.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.6.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.6.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.7.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.7.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.8.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.8.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.9.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.9.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.10.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.10.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.11.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.11.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.12.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.12.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.13.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.13.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.14.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.14.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.15.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.2.gating.15.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.self_attn.out_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.0.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.0.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.1.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.1.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.2.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.2.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.3.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.3.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.4.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.4.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.5.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.5.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.6.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.6.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.7.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.7.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.8.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.8.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.9.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.9.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.10.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.10.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.11.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.11.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.12.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.12.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.13.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.13.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.14.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.14.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.15.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.3.gating.15.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.self_attn.out_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.0.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.0.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.1.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.1.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.2.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.2.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.3.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.3.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.4.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.4.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.5.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.5.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.6.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.6.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.7.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.7.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.8.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.8.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.9.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.9.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.10.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.10.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.11.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.11.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.12.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.12.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.13.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.13.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.14.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.14.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.15.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.4.gating.15.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.self_attn.in_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.self_attn.out_proj_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.norm1.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.norm2.alpha: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.0.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.0.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.1.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.1.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.2.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.2.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.3.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.3.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.4.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.4.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.5.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.5.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.6.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.6.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.7.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.7.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.8.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.8.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.9.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.9.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.10.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.10.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.11.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.11.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.12.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.12.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.13.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.13.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.14.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.14.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.15.linear_in_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - depformer.layers.5.gating.15.linear_out_weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.0.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.1.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.2.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.3.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.4.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.5.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.6.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.7.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.8.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.9.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.10.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.11.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.12.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.13.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.14.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - linears.15.weight: True
+05/17/2025 18:01:58 - INFO - __main__ - Loading train dataset from ['processed_data/spokenwoz_sample/train-*.parquet']
+Generating train split: 0 examples [00:00, ? examples/s]Generating train split: 10 examples [00:00, 114.27 examples/s]
+num_proc must be <= 10. Reducing num_proc to 10 for dataset of size 10.
+05/17/2025 18:02:02 - WARNING - datasets.arrow_dataset - num_proc must be <= 10. Reducing num_proc to 10 for dataset of size 10.
+Preprocessing train dataset (num_proc=10):   0%|          | 0/10 [00:00<?, ? examples/s]Preprocessing train dataset (num_proc=10):  10%|█         | 1/10 [00:00<00:00,  9.34 examples/s]Preprocessing train dataset (num_proc=10): 100%|██████████| 10/10 [00:00<00:00, 45.36 examples/s]
+Using /home/acg17145sv/.cache/torch_extensions/py312_cu121 as PyTorch extensions root...
+Creating extension directory /home/acg17145sv/.cache/torch_extensions/py312_cu121/fused_adam...
+Detected CUDA files, patching ldflags
+Emitting ninja build file /home/acg17145sv/.cache/torch_extensions/py312_cu121/fused_adam/build.ninja...
+/groups/gcg51557/experiments/0162_dialogue_model/moshi-finetune/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py:1965: UserWarning: TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'].
+  warnings.warn(
+Building extension module fused_adam...
+Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+Loading extension module fused_adam...
+wandb: Currently logged in as: yutoabe (kobas_yutoabe) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: creating run
+wandb: Tracking run with wandb version 0.19.11
+wandb: Run data is saved locally in /groups/gcg51557/experiments/0162_dialogue_model/moshi-finetune/wandb/run-20250517_180246-xibb7idy
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run moshiko-finetuned
+wandb: ⭐️ View project at https://wandb.ai/kobas_yutoabe/moshi-finetuning
+wandb: 🚀 View run at https://wandb.ai/kobas_yutoabe/moshi-finetuning/runs/xibb7idy
+05/17/2025 18:02:47 - INFO - __main__ - ***** Running training *****
+05/17/2025 18:02:47 - INFO - __main__ -   Num examples = 13
+05/17/2025 18:02:47 - INFO - __main__ -   Num Epochs = 1
+05/17/2025 18:02:47 - INFO - __main__ -   Instantaneous batch size per device = 4
+05/17/2025 18:02:47 - INFO - __main__ -   Gradient Accumulation steps = 16
+05/17/2025 18:02:47 - INFO - __main__ -   Total train batch size (w. parallel, distributed & accumulation) = 64
+05/17/2025 18:02:47 - INFO - __main__ -   Total optimization steps = 1
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:08<00:00,  8.31s/it]05/17/2025 18:02:55 - INFO - __main__ - Epoch: 0, Steps: 1, LRs: {'tempformer': '0.000e+00', 'depformer': '0.000e+00'}, Loss: 8.96418 (text: 2.66379, audio: 6.30039)
+05/17/2025 18:02:56 - INFO - accelerate.accelerator - Saving current state to output/moshiko-finetuned/step_1
+05/17/2025 18:02:56 - INFO - accelerate.accelerator - Saving DeepSpeed Model and Optimizer
+05/17/2025 18:03:27 - INFO - accelerate.accelerator - DeepSpeed Model and Optimizer saved to output dir output/moshiko-finetuned/step_1/pytorch_model
+05/17/2025 18:03:27 - INFO - accelerate.checkpointing - Sampler state for dataloader 0 saved in output/moshiko-finetuned/step_1/sampler.bin
+05/17/2025 18:03:27 - INFO - accelerate.checkpointing - Random states saved in output/moshiko-finetuned/step_1/random_states_0.pkl
+100%|██████████| 1/1 [00:40<00:00, 40.01s/it]
