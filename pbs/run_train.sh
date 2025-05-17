@@ -12,6 +12,9 @@ uv sync --python 3.12
 
 export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
 export NO_TORCH_COMPILE=1
+export CUDA_HOME=/usr/local/cuda
+export PATH="$CUDA_HOME/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
 train_data_files="processed_data/spokenwoz_sample/train-*.parquet"
 
