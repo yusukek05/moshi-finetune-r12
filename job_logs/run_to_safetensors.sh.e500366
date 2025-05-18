@@ -1,9 +1,0 @@
-Resolved 96 packages in 2ms
-Audited 85 packages in 0.04ms
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/groups/gcg51557/experiments/0162_dialogue_model/moshi-finetune/tools/zero_to_fp32.py", line 748, in <module>
-    os.makedirs(args.output_dir)
-  File "<frozen os>", line 225, in makedirs
-FileExistsError: [Errno 17] File exists: 'output/moshiko-finetuned/step_1_fp32'

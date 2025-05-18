@@ -36,3 +36,4 @@ wandb
 
 tools/tokenized_data_player*
 job_logs
+job_logs/

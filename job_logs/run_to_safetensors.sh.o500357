@@ -1,2 +1,0 @@
-JOB_ID: 500357.pbs1
-[2025-05-18 16:39:47,295] [INFO] [real_accelerator.py:219:get_accelerator] Setting ds_accelerator to cuda (auto detect)
