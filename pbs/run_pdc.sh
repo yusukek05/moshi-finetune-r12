@@ -14,16 +14,24 @@ module load cuda/12.6/12.6.1
 uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
+export ACCELERATE_DISTRIBUTED_TYPE=gloo
+export PYTORCH_USE_RDMA=0
+export NCCL_DEBUG=INFO
+export NCCL_P2P_DISABLE=1
+export NCCL_IB_DISABLE=1
+export NCCL_SOCKET_IFNAME=lo
 
 model_dir="output/moshiko-finetuned/step_1_fp32"
+eval_data="processed_data/spokenwoz_sample/train-001-of-001.parquet"  
+
 uv run accelerate launch \
     --num_machines 1 \
     --num_processes 4 \
     generate.py \
         --output_dir "${model_dir}/continuation" \
         --model_dir "${model_dir}" \
-        --eval_data_files "processed_data/spokenwoz_sample/train-*.parquet" \
+        --eval_data_files "${eval_data}" \
         --prompt_length 125 \
         --generation_length 250 \
-        --temperature 0.8 \
-        
+        --example_length 375 \
+        --temperature 0.8
