@@ -35,3 +35,4 @@ wandb
 *.stats
 
 tools/tokenized_data_player*
+job_logs
