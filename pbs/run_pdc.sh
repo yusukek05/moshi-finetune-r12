@@ -2,7 +2,7 @@
 #PBS -P gcg51557                
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=1:ngpus=4
+#PBS -l select=1:ngpus=1
 #PBS -l walltime=02:00:00
 
 echo "JOB_ID: $PBS_JOBID"
@@ -26,7 +26,7 @@ eval_data="processed_data/spokenwoz_sample/train-001-of-001.parquet"
 
 uv run accelerate launch \
     --num_machines 1 \
-    --num_processes 4 \
+    --num_processes 1 \
     generate.py \
         --output_dir "${model_dir}/continuation" \
         --model_dir "${model_dir}" \
