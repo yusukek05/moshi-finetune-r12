@@ -1,0 +1,6 @@
+JOB_ID: 500362.pbs1
+[2025-05-18 16:49:58,669] [INFO] [real_accelerator.py:219:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Processing zero checkpoint 'output/moshiko-finetuned/step_1/pytorch_model'
+Detected checkpoint of type zero stage ZeroStageEnum.weights, world_size: 1
+Parsing checkpoint created by deepspeed==0.15.4
+Reconstructed Trainable fp32 state dict with 475 params 8371408896 elements
