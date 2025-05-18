@@ -2,7 +2,7 @@
 #PBS -P gcg51557                
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=1:ngpus=8
+#PBS -l select=1:ngpus=4
 #PBS -l walltime=02:00:00
 
 echo "JOB_ID: $PBS_JOBID"
@@ -13,7 +13,6 @@ module load cuda/12.6/12.6.1
 
 uv sync --python 3.12
 
-export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
 export NO_TORCH_COMPILE=1
 
 model_dir="output/moshiko-finetuned/step_1_fp32"
