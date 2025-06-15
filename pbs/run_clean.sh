@@ -16,7 +16,7 @@ uv sync --python 3.12
 export NO_TORCH_COMPILE=1
 
 uv run -m tools.clean_moshi \
-    --moshi_ft_dir output/moshiko-finetuned/step_1_fp32 \
-    --save_dir output/moshiko-finetuned/step_1_cleaned \
+    --moshi_ft_dir output/moshiko-finetuned_podcast_test/step_2_fp32 \
+    --save_dir output/moshiko-finetuned_podcast_test/step_2_cleaned \
     --model_dtype float32 \
     --remove_modules_for_user_stream
