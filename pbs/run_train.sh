@@ -18,16 +18,16 @@ export CUDA_HOME=$(dirname $(dirname $(which nvcc)))
 export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
-train_data_files="processed_data/J-CHAT/podcast_test/podcast_test-*.parquet"
+train_data_files="processed_data/J-CHAT/youtube_other/youtube_other-*.parquet"
 
 uv run accelerate launch \
-    --num_processes 1 \
+    --num_processes 8 \
     --num_machines 1 \
     --use_deepspeed \
     --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
     finetune.py \
         --launcher accelerate \
-        --output_dir output/moshiko-finetuned_podcast_test \
+        --output_dir output/moshiko-finetuned_youtube_other \
         --train_data_files "${train_data_files}" \
         --model_dir init_models/moshiko-both_streams-float32 \
         --model_dtype float32 \
