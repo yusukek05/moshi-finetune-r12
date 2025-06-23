@@ -20,6 +20,11 @@ export NO_TORCH_COMPILE=1
 export NCCL_DEBUG=INFO
 export NCCL_IB_HCA=mlx5_0 
 export NCCL_ASYNC_ERROR_HANDLING=1
+
+export NCCL_NVLS_ENABLE=0
+export NCCL_IGNORE_DISABLED_NVLS=1
+export NCCL_IB_DISABLE=1
+
 ulimit -l unlimited
 
 uv sync --python 3.12                          
