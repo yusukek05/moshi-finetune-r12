@@ -8,6 +8,7 @@ import numpy as np
 from huggingface_hub import hf_hub_download
 from sentencepiece import SentencePieceProcessor
 from tqdm import tqdm
+import logging
 
 
 def encode_as_pieces_wo_byte_fallback(sp: SentencePieceProcessor, text: str) -> list[str]:
@@ -49,9 +50,14 @@ def tokenize_and_pad_text(
     Fill the appropriate frames with the tokens based on the word-level timestamps,
     and frames without tokens are filled with the padding token.
     """
-    # assert single speaker
-    speakers = [seg["speaker"] for seg in word_transcript]
-    assert len(set(speakers)) == 1
+    # ---------- empty transcript ----------
+    if not word_transcript:
+        # 無発話 → 空の token_id 配列（保存時に np.savez は長さ 0 を許容）
+        return []
+
+    # ---------- single-speaker check ----------
+    speakers = {seg["speaker"] for seg in word_transcript}
+    assert len(speakers) == 1, f"Expected single speaker but found {speakers}"
 
     # sort the word transcript by the start time
     word_transcript = sorted(word_transcript, key=lambda x: x["start"])
@@ -142,37 +148,38 @@ def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace)
     for dialogue_name in pbar:
         pbar.set_postfix_str(dialogue_name)
 
-        # load word-level transcript
-        with open(os.path.join(args.word_transcript_dir, f"{dialogue_name}.json")) as f:
-            word_transcript = json.load(f)
-
-        # tokenize text
-        word_transcript_A = [seg for seg in word_transcript if seg["speaker"] == "A"]
-        token_ids_A = tokenize_and_pad_text(
-            word_transcript=word_transcript_A,
-            no_whitespace_before_word=args.no_whitespace_before_word,
-            text_tokenizer=sp,
-            text_padding_id=args.text_padding_id,
-            end_of_text_padding_id=args.end_of_text_padding_id,
-            audio_tokenizer_frame_rate=args.audio_tokenizer_frame_rate,
-        )
-        word_transcript_B = [seg for seg in word_transcript if seg["speaker"] == "B"]
-        token_ids_B = tokenize_and_pad_text(
-            word_transcript=word_transcript_B,
-            no_whitespace_before_word=args.no_whitespace_before_word,
-            text_tokenizer=sp,
-            text_padding_id=args.text_padding_id,
-            end_of_text_padding_id=args.end_of_text_padding_id,
-            audio_tokenizer_frame_rate=args.audio_tokenizer_frame_rate,
-        )
-
-        # save the tokenized text
-        output_path = os.path.join(args.output_dir, f"{dialogue_name}.npz")
         try:
+            # ---------- load ----------
+            with open(os.path.join(args.word_transcript_dir, f"{dialogue_name}.json")) as f:
+                word_transcript = json.load(f)
+
+            # ---------- tokenize ----------
+            word_transcript_A = [seg for seg in word_transcript if seg["speaker"] == "A"]
+            token_ids_A = tokenize_and_pad_text(
+                word_transcript=word_transcript_A, 
+                no_whitespace_before_word=args.no_whitespace_before_word,
+                text_tokenizer=sp,
+                text_padding_id=args.text_padding_id,
+                end_of_text_padding_id=args.end_of_text_padding_id,
+                audio_tokenizer_frame_rate=args.audio_tokenizer_frame_rate,
+            )
+            word_transcript_B = [seg for seg in word_transcript if seg["speaker"] == "B"]
+            token_ids_B = tokenize_and_pad_text(
+                word_transcript=word_transcript_B,
+                no_whitespace_before_word=args.no_whitespace_before_word,
+                text_tokenizer=sp,
+                text_padding_id=args.text_padding_id,
+                end_of_text_padding_id=args.end_of_text_padding_id,
+                audio_tokenizer_frame_rate=args.audio_tokenizer_frame_rate,
+            )
+
+            # ---------- save ----------
+            output_path = os.path.join(args.output_dir, f"{dialogue_name}.npz")
             np.savez_compressed(output_path, A=token_ids_A, B=token_ids_B)
-        except Exception as e:
-            print(f"Error in saving {output_path}: {e}")
-            os.remove(output_path)
+
+        except Exception:
+            logging.exception(f"Failed to process '{dialogue_name}' — skipped.")
+            continue  # 次の JSON へ
 
 
 def main(args):

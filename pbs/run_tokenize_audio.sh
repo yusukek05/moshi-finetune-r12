@@ -12,5 +12,5 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.tokenize_audio \
-    --audio_dir data/spokenwoz_sample/audio \
-    --output_dir data/spokenwoz_sample/tokenized_audio
+    --audio_dir /home/acg17145sv/experiments/0162_dialogue_model/J-CHAT/separated/youtube_test \
+    --output_dir data/J-CHAT/tokenized_audio/youtube_test
