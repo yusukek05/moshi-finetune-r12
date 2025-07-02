@@ -12,6 +12,6 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.prepare_dataset \
-    --tokenized_text_dir data/J-CHAT/tokenized_text/youtube_other \
-    --tokenized_audio_dir data/J-CHAT/tokenized_audio/youtube_other \
-    --output_prefix processed_data/J-CHAT/youtube_other
+    --tokenized_text_dir data/J-CHAT/tokenized_text/youtube_valid \
+    --tokenized_audio_dir data/J-CHAT/tokenized_audio/youtube_valid \
+    --output_prefix processed_data/J-CHAT/youtube_valid
