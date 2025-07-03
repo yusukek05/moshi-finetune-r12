@@ -3,7 +3,7 @@
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ngpus=1 
-#PBS -l walltime=02:00:00
+#PBS -l walltime=04:00:00
 
 echo "JOB_ID: $PBS_JOBID"
 cd $PBS_O_WORKDIR
@@ -12,8 +12,8 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.tokenize_text \
-    --word_transcript /home/acg17145sv/experiments/0162_dialogue_model/J-CHAT/text/podcast_valid \
-    --output_dir data/J-CHAT/tokenized_text/podcast_valid \
+    --word_transcript /home/acg17145sv/experiments/0162_dialogue_model/J-CHAT/text/podcast_train \
+    --output_dir data/J-CHAT/tokenized_text/podcast_train \
     --text_tokenizer_repo rinna/japanese-gpt2-medium \
     --text_tokenizer_name spiece.model \
     --text_padding_id 3 \
