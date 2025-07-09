@@ -3,8 +3,8 @@
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ngpus=8
-#PBS -j oe                         
-#PBS -o finetune_moshi.out       
+#PBS -N 0162_podcast_train
+#PBS -l walltime=12:00:00       
 
 echo "JOB_ID: $PBS_JOBID"
 cd "$PBS_O_WORKDIR"
@@ -29,7 +29,7 @@ ulimit -l unlimited
 
 uv sync --python 3.12                          
 
-train_data_files="processed_data/J-CHAT/youtube_other/youtube_other-*.parquet"
+train_data_files="processed_data/J-CHAT/podcast_train/podcast_train-*.parquet"
 
 uv run accelerate launch \
     --num_processes 8 \
@@ -38,7 +38,7 @@ uv run accelerate launch \
     --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
     finetune.py \
         --launcher accelerate \
-        --output_dir output/moshiko-finetuned_youtube_other \
+        --output_dir output/moshiko-finetuned_podcast_train \
         --train_data_files "${train_data_files}" \
         --model_dir init_models/moshiko-both_streams-float32 \
         --model_dtype float32 \
