@@ -42,12 +42,12 @@ def main(args):
     if missing_audio_dialogue_names:
         print(f"Missing tokenized audio for {len(missing_audio_dialogue_names)} dialogues.")
         open("missing_audio_dialogue_names.txt", "w").write("\n".join(missing_audio_dialogue_names))
-    if missing_text_dialogue_names or missing_audio_dialogue_names:
-        print("Both text and audio tokenized dialogues should match.")
-        return
+    # if missing_text_dialogue_names or missing_audio_dialogue_names:
+    #     print("Both text and audio tokenized dialogues should match.")
+    #     return
 
     os.makedirs(os.path.dirname(args.output_prefix), exist_ok=True)
-    dialogue_names = text_dialogue_names
+    dialogue_names = sorted(set(text_dialogue_names) & set(audio_dialogue_names))
     num_dialogues = len(dialogue_names)
     num_parquets = -(-num_dialogues // args.num_examples_per_parquet)
 
