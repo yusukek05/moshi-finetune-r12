@@ -9,6 +9,7 @@ from huggingface_hub import hf_hub_download
 from sentencepiece import SentencePieceProcessor
 from tqdm import tqdm
 import logging
+from pathlib import Path
 
 
 def encode_as_pieces_wo_byte_fallback(
@@ -146,19 +147,23 @@ def tokenize_and_pad_text(
     return token_ids
 
 
-def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace):
+def worker(process_id: int, dialogue_paths: list[Path], args: argparse.Namespace):
     sp = SentencePieceProcessor(
         hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name)
     )
-    pbar = tqdm(dialogue_names, desc=f"Worker {process_id}", dynamic_ncols=True)
-    for dialogue_name in pbar:
-        pbar.set_postfix_str(dialogue_name)
+    pbar = tqdm(dialogue_paths, desc=f"Worker {process_id}", dynamic_ncols=True)
+    in_root = Path(args.word_transcript_dir).resolve()
+    out_root = Path(args.output_dir).resolve()
+
+    for dialogue_path in pbar:
+        rel_path = dialogue_path.relative_to(
+            in_root
+        )  # 例: 00000-of-01432/cuts.000000/foo.json
+        pbar.set_postfix_str(str(rel_path))
 
         try:
             # ---------- load ----------
-            with open(
-                os.path.join(args.word_transcript_dir, f"{dialogue_name}.json")
-            ) as f:
+            with dialogue_path.open() as f:
                 word_transcript = json.load(f)
 
             # ---------- tokenize ----------
@@ -186,47 +191,59 @@ def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace)
             )
 
             # ---------- save ----------
-            output_path = os.path.join(args.output_dir, f"{dialogue_name}.npz")
-            np.savez_compressed(output_path, A=token_ids_A, B=token_ids_B)
+            out_path = (out_root / rel_path).with_suffix(".npz")
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(out_path, A=token_ids_A, B=token_ids_B)
 
         except Exception:
-            logging.exception(f"Failed to process '{dialogue_name}' — skipped.")
+            logging.exception(f"Failed to process '{dialogue_paths}' — skipped.")
             continue  # 次の JSON へ
 
 
 def main(args):
-    dialogue_names = [
-        os.path.splitext(d)[0]
-        for d in os.listdir(args.word_transcript_dir)
-        if d.endswith(".json")
-    ]
+    in_root = Path(args.word_transcript_dir).resolve()
+    dialogue_paths = list(in_root.rglob("*.json"))  # ← 再帰的に収集
 
-    os.makedirs(args.output_dir, exist_ok=True)
+    # --resume オプション
+    out_root = Path(args.output_dir).resolve()
     if args.resume:
-        tokenized_dialogue_names = [
-            os.path.splitext(d)[0]
-            for d in os.listdir(args.output_dir)
-            if d.endswith(".npz")
+        tokenized = {p.with_suffix(".npz") for p in out_root.rglob("*.npz")}
+        dialogue_paths = [
+            p
+            for p in dialogue_paths
+            if (out_root / p.relative_to(in_root)).with_suffix(".npz") not in tokenized
         ]
-        print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
-        dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
 
+    # worker へは Path のリストを渡す
     if args.num_workers == 1:
-        worker(0, dialogue_names, args)
+        worker(0, dialogue_paths, args)
 
-    else:
-        dialogue_names_per_worker = np.array_split(dialogue_names, args.num_workers)
-        print(
-            f"Each of {args.num_workers} workers processes {len(dialogue_names_per_worker[0])} dialogues."
-        )
+    # os.makedirs(args.output_dir, exist_ok=True)
+    # if args.resume:
+    #     tokenized_dialogue_names = [
+    #         os.path.splitext(d)[0]
+    #         for d in os.listdir(args.output_dir)
+    #         if d.endswith(".npz")
+    #     ]
+    #     print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
+    #     dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
 
-        processes = []
-        for i, dialogue_names in enumerate(dialogue_names_per_worker):
-            p = mp.Process(target=worker, args=(i, dialogue_names, args))
-            p.start()
-            processes.append(p)
-        for p in processes:
-            p.join()
+    # if args.num_workers == 1:
+    #     worker(0, dialogue_names, args)
+
+    # else:
+    #     dialogue_names_per_worker = np.array_split(dialogue_names, args.num_workers)
+    #     print(
+    #         f"Each of {args.num_workers} workers processes {len(dialogue_names_per_worker[0])} dialogues."
+    #     )
+
+    #     processes = []
+    #     for i, dialogue_names in enumerate(dialogue_names_per_worker):
+    #         p = mp.Process(target=worker, args=(i, dialogue_names, args))
+    #         p.start()
+    #         processes.append(p)
+    #     for p in processes:
+    #         p.join()
 
 
 if __name__ == "__main__":

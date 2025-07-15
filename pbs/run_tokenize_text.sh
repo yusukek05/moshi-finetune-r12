@@ -18,4 +18,5 @@ uv run -m tools.tokenize_text \
     --text_tokenizer_name spiece.model \
     --text_padding_id 3 \
     --end_of_text_padding_id 0 \
-    --no_whitespace_before_word
+    --no_whitespace_before_word \
+    --resume
