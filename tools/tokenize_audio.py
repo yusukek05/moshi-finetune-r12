@@ -33,7 +33,9 @@ def tokenize_audio(
         wav_chunk = wav[i * wav_chunk_size : (i + 1) * wav_chunk_size]
         with torch.no_grad():
             list_of_audio_ids.append(
-                mimi.encode(wav_chunk.reshape(1, 1, -1).to(device)).cpu()  # [B=1, K=8, T_chunk]
+                mimi.encode(
+                    wav_chunk.reshape(1, 1, -1).to(device)
+                ).cpu()  # [B=1, K=8, T_chunk]
             )
     audio_ids = torch.cat(list_of_audio_ids, dim=-1)  # [B=1, K=8, T]
     audio_ids = audio_ids[0]  # [K=8, T]
@@ -59,7 +61,9 @@ def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace)
 
         # load audio
         wavs, sr = torchaudio.load(os.path.join(args.audio_dir, f"{dialogue_name}.wav"))
-        assert wavs.shape[0] == 2, f"Expected stereo audio, got {wavs.shape[0]} channels."
+        assert (
+            wavs.shape[0] == 2
+        ), f"Expected stereo audio, got {wavs.shape[0]} channels."
         resampler = torchaudio.transforms.Resample(sr, mimi.sample_rate).to(device)
         wavs = resampler(wavs.to(device))
 
@@ -70,7 +74,9 @@ def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace)
         # save tokenized audio
         output_path = os.path.join(args.output_dir, f"{dialogue_name}.npz")
         try:
-            np.savez_compressed(output_path, A=audio_ids_A.numpy(), B=audio_ids_B.numpy())
+            np.savez_compressed(
+                output_path, A=audio_ids_A.numpy(), B=audio_ids_B.numpy()
+            )
         except Exception as e:
             print(f"Failed to save {output_path}: {e}")
             os.remove(output_path)
@@ -84,7 +90,9 @@ def main(args):
     os.makedirs(args.output_dir, exist_ok=True)
     if args.resume:
         tokenized_dialogue_names = [
-            os.path.splitext(d)[0] for d in os.listdir(args.output_dir) if d.endswith(".npz")
+            os.path.splitext(d)[0]
+            for d in os.listdir(args.output_dir)
+            if d.endswith(".npz")
         ]
         print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
         dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
@@ -155,7 +163,10 @@ if __name__ == "__main__":
         help="Split audio into chunks of this size (seconds) to fit into cuda memory.",
     )
     parser.add_argument(
-        "--num_workers", type=int, default=1, help="Number of workers for multiprocessing."
+        "--num_workers",
+        type=int,
+        default=1,
+        help="Number of workers for multiprocessing.",
     )
     parser.add_argument("--resume", action="store_true", help="Resume tokenization.")
     args = parser.parse_args()
