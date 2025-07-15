@@ -11,7 +11,9 @@ from tqdm import tqdm
 import logging
 
 
-def encode_as_pieces_wo_byte_fallback(sp: SentencePieceProcessor, text: str) -> list[str]:
+def encode_as_pieces_wo_byte_fallback(
+    sp: SentencePieceProcessor, text: str
+) -> list[str]:
     """
     Tokenize the text without using byte fallback.
     """
@@ -33,7 +35,9 @@ def encode_as_pieces_wo_byte_fallback(sp: SentencePieceProcessor, text: str) -> 
                 text = text[len(token) :]
                 last_byte_tokens = []
     if last_byte_tokens:
-        raise ValueError(f"Failed to decode the last byte tokens: {last_byte_tokens} in {text}")
+        raise ValueError(
+            f"Failed to decode the last byte tokens: {last_byte_tokens} in {text}"
+        )
     return tokens_wo_byte
 
 
@@ -143,27 +147,35 @@ def tokenize_and_pad_text(
 
 
 def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace):
-    sp = SentencePieceProcessor(hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name))
+    sp = SentencePieceProcessor(
+        hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name)
+    )
     pbar = tqdm(dialogue_names, desc=f"Worker {process_id}", dynamic_ncols=True)
     for dialogue_name in pbar:
         pbar.set_postfix_str(dialogue_name)
 
         try:
             # ---------- load ----------
-            with open(os.path.join(args.word_transcript_dir, f"{dialogue_name}.json")) as f:
+            with open(
+                os.path.join(args.word_transcript_dir, f"{dialogue_name}.json")
+            ) as f:
                 word_transcript = json.load(f)
 
             # ---------- tokenize ----------
-            word_transcript_A = [seg for seg in word_transcript if seg["speaker"] == "A"]
+            word_transcript_A = [
+                seg for seg in word_transcript if seg["speaker"] == "A"
+            ]
             token_ids_A = tokenize_and_pad_text(
-                word_transcript=word_transcript_A, 
+                word_transcript=word_transcript_A,
                 no_whitespace_before_word=args.no_whitespace_before_word,
                 text_tokenizer=sp,
                 text_padding_id=args.text_padding_id,
                 end_of_text_padding_id=args.end_of_text_padding_id,
                 audio_tokenizer_frame_rate=args.audio_tokenizer_frame_rate,
             )
-            word_transcript_B = [seg for seg in word_transcript if seg["speaker"] == "B"]
+            word_transcript_B = [
+                seg for seg in word_transcript if seg["speaker"] == "B"
+            ]
             token_ids_B = tokenize_and_pad_text(
                 word_transcript=word_transcript_B,
                 no_whitespace_before_word=args.no_whitespace_before_word,
@@ -184,13 +196,17 @@ def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace)
 
 def main(args):
     dialogue_names = [
-        os.path.splitext(d)[0] for d in os.listdir(args.word_transcript_dir) if d.endswith(".json")
+        os.path.splitext(d)[0]
+        for d in os.listdir(args.word_transcript_dir)
+        if d.endswith(".json")
     ]
 
     os.makedirs(args.output_dir, exist_ok=True)
     if args.resume:
         tokenized_dialogue_names = [
-            os.path.splitext(d)[0] for d in os.listdir(args.output_dir) if d.endswith(".npz")
+            os.path.splitext(d)[0]
+            for d in os.listdir(args.output_dir)
+            if d.endswith(".npz")
         ]
         print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
         dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
@@ -257,7 +273,9 @@ if __name__ == "__main__":
         ),
     )
 
-    parser.add_argument("--text_padding_id", type=int, default=3, help="Padding id for text.")
+    parser.add_argument(
+        "--text_padding_id", type=int, default=3, help="Padding id for text."
+    )
     parser.add_argument(
         "--end_of_text_padding_id", type=int, default=0, help="End of text padding id."
     )
@@ -268,7 +286,10 @@ if __name__ == "__main__":
         help="Frame rate for the audio tokenizer.",
     )
     parser.add_argument(
-        "--num_workers", type=int, default=1, help="Number of workers for multiprocessing."
+        "--num_workers",
+        type=int,
+        default=1,
+        help="Number of workers for multiprocessing.",
     )
     parser.add_argument("--resume", action="store_true", help="Resume tokenization.")
 
