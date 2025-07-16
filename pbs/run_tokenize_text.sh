@@ -2,8 +2,9 @@
 #PBS -P gcg51557                
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=1:ngpus=1 
-#PBS -l walltime=04:00:00
+#PBS -l select=1:ngpus=8
+#PBS -l walltime=10:00:00
+#PBS -N 0162_tokenize_text
 
 echo "JOB_ID: $PBS_JOBID"
 cd $PBS_O_WORKDIR
@@ -19,4 +20,5 @@ uv run -m tools.tokenize_text \
     --text_padding_id 3 \
     --end_of_text_padding_id 0 \
     --no_whitespace_before_word \
+    --num_workers 8 \
     --resume

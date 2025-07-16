@@ -217,33 +217,25 @@ def main(args):
     # worker へは Path のリストを渡す
     if args.num_workers == 1:
         worker(0, dialogue_paths, args)
+        return
 
-    # os.makedirs(args.output_dir, exist_ok=True)
-    # if args.resume:
-    #     tokenized_dialogue_names = [
-    #         os.path.splitext(d)[0]
-    #         for d in os.listdir(args.output_dir)
-    #         if d.endswith(".npz")
-    #     ]
-    #     print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
-    #     dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
+    dialogue_chunks = np.array_split(dialogue_paths, args.num_workers)
+    print(
+        f"Spawning {args.num_workers} workers – "
+        f"{len(dialogue_chunks[0])} dialogues / worker × {args.num_workers}"
+    )
 
-    # if args.num_workers == 1:
-    #     worker(0, dialogue_names, args)
+    procs: list[mp.Process] = []
+    for rank, chunk in enumerate(dialogue_chunks):
+        p = mp.Process(target=worker, args=(rank, list(chunk), args), daemon=False)
+        p.start()
+        procs.append(p)
 
-    # else:
-    #     dialogue_names_per_worker = np.array_split(dialogue_names, args.num_workers)
-    #     print(
-    #         f"Each of {args.num_workers} workers processes {len(dialogue_names_per_worker[0])} dialogues."
-    #     )
-
-    #     processes = []
-    #     for i, dialogue_names in enumerate(dialogue_names_per_worker):
-    #         p = mp.Process(target=worker, args=(i, dialogue_names, args))
-    #         p.start()
-    #         processes.append(p)
-    #     for p in processes:
-    #         p.join()
+    # 異常終了を拾う
+    for p in procs:
+        p.join()
+        if p.exitcode != 0:
+            raise RuntimeError(f"Worker {p.pid} exited with code {p.exitcode}")
 
 
 if __name__ == "__main__":
