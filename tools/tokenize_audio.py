@@ -8,6 +8,7 @@ import torchaudio
 from huggingface_hub import hf_hub_download
 from moshi.models import MimiModel, loaders
 from tqdm import tqdm
+from pathlib import Path
 
 
 def ceil(x, y):
@@ -48,19 +49,26 @@ def tokenize_audio(
     return audio_ids
 
 
-def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace):
+def worker(process_id: int, wav_paths: list[Path], args: argparse.Namespace):
     device = torch.device("cuda", process_id)
     mimi = loaders.get_mimi(
         filename=hf_hub_download(args.audio_tokenizer_repo, args.audio_tokenizer_name),
         device=device,
     )
-    pbar = tqdm(dialogue_names, desc=f"Worker {process_id}", dynamic_ncols=True)
+    pbar = tqdm(wav_paths, desc=f"Worker {process_id}", dynamic_ncols=True)
 
-    for dialogue_name in pbar:
+    in_root = Path(args.audio_dir).resolve()
+    out_root = Path(args.output_dir).resolve()
+
+    for wav_path in pbar:
+        rel_path = wav_path.relative_to(
+            in_root
+        )  # 例: 00000-of-01432/cuts.000000/foo.wav
+        dialogue_name = rel_path.with_suffix("").as_posix()  # 進捗表示用
         pbar.set_postfix_str(dialogue_name)
 
         # load audio
-        wavs, sr = torchaudio.load(os.path.join(args.audio_dir, f"{dialogue_name}.wav"))
+        wavs, sr = torchaudio.load(wav_path)
         assert (
             wavs.shape[0] == 2
         ), f"Expected stereo audio, got {wavs.shape[0]} channels."
@@ -72,33 +80,32 @@ def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace)
         audio_ids_B = tokenize_audio(wavs[1], mimi, args.audio_chunk_size)
 
         # save tokenized audio
-        output_path = os.path.join(args.output_dir, f"{dialogue_name}.npz")
+        out_path = (out_root / rel_path).with_suffix(".npz")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            np.savez_compressed(
-                output_path, A=audio_ids_A.numpy(), B=audio_ids_B.numpy()
-            )
+            np.savez_compressed(out_path, A=audio_ids_A.numpy(), B=audio_ids_B.numpy())
         except Exception as e:
-            print(f"Failed to save {output_path}: {e}")
-            os.remove(output_path)
+            print(f"Failed to save {out_path}: {e}")
+            if out_path.exists():
+                out_path.unlink()
 
 
 def main(args):
-    dialogue_names = [
-        os.path.splitext(d)[0] for d in os.listdir(args.audio_dir) if d.endswith(".wav")
-    ]
+    in_root = Path(args.audio_dir).resolve()
+    wav_paths = list(in_root.rglob("*.wav"))
 
-    os.makedirs(args.output_dir, exist_ok=True)
+    out_root = Path(args.output_dir).resolve()
     if args.resume:
-        tokenized_dialogue_names = [
-            os.path.splitext(d)[0]
-            for d in os.listdir(args.output_dir)
-            if d.endswith(".npz")
+        tokenized = {p.with_suffix(".npz") for p in out_root.rglob("*.npz")}
+        wav_paths = [
+            p
+            for p in wav_paths
+            if (out_root / p.relative_to(in_root)).with_suffix(".npz") not in tokenized
         ]
-        print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
-        dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
+        print(f"Skipping {len(tokenized)} already tokenized dialogues.")
 
     if args.num_workers == 1:
-        worker(0, dialogue_names, args)
+        worker(0, wav_paths, args)
 
     else:
         num_devices = torch.cuda.device_count()
@@ -109,14 +116,14 @@ def main(args):
             args.num_workers = num_devices
             print(f"Using {args.num_workers} workers.")
 
-        dialogue_names_per_worker = np.array_split(dialogue_names, args.num_workers)
+        chunks = np.array_split(np.array(wav_paths), args.num_workers)
         print(
-            f"Each of {args.num_workers} workers processes {len(dialogue_names_per_worker[0])} dialogues."
+            f"Each of {args.num_workers} workers processes {len(chunks[0])} dialogues."
         )
 
         processes = []
-        for i, dialogue_names in enumerate(dialogue_names_per_worker):
-            p = mp.Process(target=worker, args=(i, dialogue_names, args))
+        for i, chunk in enumerate(chunks):
+            p = mp.Process(target=worker, args=(i, list(chunk), args))
             p.start()
             processes.append(p)
         for p in processes:
