@@ -32,16 +32,28 @@ def merge_text_audio(
 
 
 def main(args):
-    text_dialogue_names = [os.path.splitext(f)[0] for f in os.listdir(args.tokenized_text_dir)]
-    audio_dialogue_names = [os.path.splitext(f)[0] for f in os.listdir(args.tokenized_audio_dir)]
+    text_dialogue_names = [
+        os.path.splitext(f)[0] for f in os.listdir(args.tokenized_text_dir)
+    ]
+    audio_dialogue_names = [
+        os.path.splitext(f)[0] for f in os.listdir(args.tokenized_audio_dir)
+    ]
     missing_text_dialogue_names = set(audio_dialogue_names) - set(text_dialogue_names)
     missing_audio_dialogue_names = set(text_dialogue_names) - set(audio_dialogue_names)
     if missing_text_dialogue_names:
-        print(f"Missing tokenized text for {len(missing_text_dialogue_names)} dialogues.")
-        open("missing_text_dialogue_names.txt", "w").write("\n".join(missing_text_dialogue_names))
+        print(
+            f"Missing tokenized text for {len(missing_text_dialogue_names)} dialogues."
+        )
+        open("missing_text_dialogue_names.txt", "w").write(
+            "\n".join(missing_text_dialogue_names)
+        )
     if missing_audio_dialogue_names:
-        print(f"Missing tokenized audio for {len(missing_audio_dialogue_names)} dialogues.")
-        open("missing_audio_dialogue_names.txt", "w").write("\n".join(missing_audio_dialogue_names))
+        print(
+            f"Missing tokenized audio for {len(missing_audio_dialogue_names)} dialogues."
+        )
+        open("missing_audio_dialogue_names.txt", "w").write(
+            "\n".join(missing_audio_dialogue_names)
+        )
     # if missing_text_dialogue_names or missing_audio_dialogue_names:
     #     print("Both text and audio tokenized dialogues should match.")
     #     return
@@ -70,8 +82,12 @@ def main(args):
                     "dialogue_id": os.path.join(
                         args.output_prefix, dialogue_name
                     ),  # unique identifier
-                    "A": merge_text_audio(text_ids["A"], audio_ids["A"], args.text_padding_id),
-                    "B": merge_text_audio(text_ids["B"], audio_ids["B"], args.text_padding_id),
+                    "A": merge_text_audio(
+                        text_ids["A"], audio_ids["A"], args.text_padding_id
+                    ),
+                    "B": merge_text_audio(
+                        text_ids["B"], audio_ids["B"], args.text_padding_id
+                    ),
                 }
             )
 
