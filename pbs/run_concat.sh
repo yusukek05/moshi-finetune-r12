@@ -13,6 +13,6 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.prepare_dataset \
-    --tokenized_text_dir data/CallHome/tokenized_text \
-    --tokenized_audio_dir data/CallHome/tokenized_audio \
-    --output_prefix processed_data/CallHome/train
+    --tokenized_text_dir data/J-CHAT/tokenized_text/youtube_train \
+    --tokenized_audio_dir data/J-CHAT/tokenized_audio/youtube_train \
+    --output_prefix processed_data/J-CHAT/youtube_train/youtube_train
