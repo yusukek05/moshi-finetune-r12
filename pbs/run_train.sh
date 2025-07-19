@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=6:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_y_train
+#PBS -N 0162_p_train
 #PBS -j oe
 
 set -euxo pipefail
