@@ -15,7 +15,7 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi-finetuned_podcast_train/step_121_fp32"
+model_dir="output/moshi-finetuned_podcast_train/step_1169_fp32"
 
 uv run -m tools.decode_tokens \
     --tokens_dir "${model_dir}/continuation/generated_tokens" \

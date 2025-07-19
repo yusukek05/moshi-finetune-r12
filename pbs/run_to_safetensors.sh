@@ -2,8 +2,8 @@
 #PBS -P gcg51557                
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=1:ngpus=1 
-#PBS -l walltime=02:00:00
+#PBS -l select=1:ngpus=8 
+#PBS -l walltime=20:00:00
 
 echo "JOB_ID: $PBS_JOBID"
 cd $PBS_O_WORKDIR
@@ -20,6 +20,6 @@ export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
 uv run -m tools.zero_to_fp32 \
-    output/moshi-finetuned_podcast_train/step_121 \
-    output/moshi-finetuned_podcast_train/step_121_fp32 \
+    output/moshi-finetuned_podcast_train/step_1169 \
+    output/moshi-finetuned_podcast_train/step_1169_fp32 \
     --moshi_lm_kwargs_path init_models/moshiko-both_streams-float32/moshi_lm_kwargs.json
