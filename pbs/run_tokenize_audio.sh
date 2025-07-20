@@ -14,7 +14,7 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.tokenize_audio \
-    --audio_dir /home/acg17145sv/experiments/0162_dialogue_model/CSJ/audio/core \
-    --output_dir data/CSJ/tokenized_audio/core \
+    --audio_dir /home/acg17145sv/experiments/0162_dialogue_model/CSJ/audio/noncore \
+    --output_dir data/CSJ/tokenized_audio/noncore \
     --num_workers 8 \
     --resume
