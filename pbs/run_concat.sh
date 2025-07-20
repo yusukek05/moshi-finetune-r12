@@ -13,6 +13,6 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.prepare_dataset \
-    --tokenized_text_dir data/CSJ/tokenized_text/core \
-    --tokenized_audio_dir data/CSJ/tokenized_audio/core \
-    --output_prefix processed_data/CSJ/core
+    --tokenized_text_dir data/CSJ/tokenized_text/noncore \
+    --tokenized_audio_dir data/CSJ/tokenized_audio/noncore \
+    --output_prefix processed_data/CSJ/noncore
