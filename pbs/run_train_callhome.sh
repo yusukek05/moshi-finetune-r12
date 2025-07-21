@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=2:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_callhome_train
+#PBS -N 0162_callhome_csj_train
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,16 +33,17 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_callhome
-NNODES=$(wc -l < hostfile_mpi_callhome)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_callhome_csj
+NNODES=$(wc -l < hostfile_mpi_callhome_csj)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_callhome
+cat hostfile_mpi_callhome_csj
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/CallHome/train-*.parquet"
+train_data="processed_data/CallHome/train-*.parquet \
+processed_data/CSJ/*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -56,9 +57,11 @@ mpirun \
   uv run finetune.py \
       --launcher mpi \
       --use_deepspeed \
+      --tempformer_learning_rate 2e-6 \
+      --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt_callhome.json \
-      --output_dir  output/moshi-finetuned_podcast_train_callhome \
-      --train_data_files "${train_data}" \
+      --output_dir  output/moshi-finetuned_podcast_train_callhome_csj \
+      --train_data_files ${train_data} \
       --model_dir   output/moshi-finetuned_podcast_train/step_1169_fp32 \
       --model_dtype float32 \
       --model_user_stream \
