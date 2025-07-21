@@ -2,9 +2,9 @@
 #PBS -P gcg51557
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=6:ncpus=8:ngpus=8
+#PBS -l select=8:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_p_train
+#PBS -N 0162_train
 #PBS -j oe
 
 set -euxo pipefail
@@ -42,7 +42,8 @@ cat hostfile_mpi
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/J-CHAT/podcast_train/podcast_train-*.parquet"
+train_data="processed_data/J-CHAT/podcast_train/podcast_train-*.parquet \
+processed_data/J-CHAT/youtube_train/youtube_train-*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -57,16 +58,16 @@ mpirun \
       --launcher mpi \
       --use_deepspeed \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
-      --output_dir  output/moshi-finetuned_podcast_train \
-      --train_data_files "${train_data}" \
+      --output_dir  output/moshi-finetuned_train_0719 \
+      --train_data_files ${train_data} \
       --model_dir   init_models/moshiko-both_streams-float32 \
       --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
       --min_length 128 \
       --num_train_epochs 1 \
-      --per_device_train_batch_size 4 \
-      --gradient_accumulation_steps 16 \
+      --per_device_train_batch_size 8 \
+      --gradient_accumulation_steps 1 \
       --num_warmup_steps 500 \
       --activation_checkpointing \
       --logging_steps 1 \
