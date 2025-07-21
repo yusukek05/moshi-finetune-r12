@@ -4,6 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ngpus=1
 #PBS -l walltime=02:00:00
+#PBS -j oe
 
 echo "JOB_ID: $PBS_JOBID"
 cd $PBS_O_WORKDIR
@@ -15,7 +16,7 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi-finetuned_podcast_train_callhome/step_15_fp32"
+model_dir="output/moshi-finetuned_podcast_train_callhome_csj/step_18_fp32"
 
 uv run -m tools.decode_tokens \
     --tokens_dir "${model_dir}/continuation/generated_tokens" \
