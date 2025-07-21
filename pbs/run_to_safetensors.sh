@@ -21,6 +21,6 @@ export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
 uv run -m tools.zero_to_fp32 \
-    output/moshi-finetuned_podcast_train_callhome/step_15 \
-    output/moshi-finetuned_podcast_train_callhome/step_15_fp32 \
+    output/moshi-finetuned_podcast_train_callhome_csj/step_18 \
+    output/moshi-finetuned_podcast_train_callhome_csj/step_18_fp32 \
     --moshi_lm_kwargs_path init_models/moshiko-both_streams-float32/moshi_lm_kwargs.json
