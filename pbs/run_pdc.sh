@@ -4,6 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ngpus=1
 #PBS -l walltime=02:00:00
+#PBS -j oe
 
 echo "JOB_ID: $PBS_JOBID"
 cd $PBS_O_WORKDIR
