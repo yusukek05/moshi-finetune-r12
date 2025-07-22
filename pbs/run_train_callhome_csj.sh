@@ -60,9 +60,9 @@ mpirun \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt_callhome_csj.json \
-      --output_dir  output/moshi-finetuned_podcast_train_callhome_csj \
+      --output_dir  output/moshi-finetuned_train_callhome_csj \
       --train_data_files ${train_data} \
-      --model_dir   output/moshi-finetuned_podcast_train/step_1169_fp32 \
+      --model_dir   output/moshi-finetuned_train_0719/step_8714_fp32 \
       --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
