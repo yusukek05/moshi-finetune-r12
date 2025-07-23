@@ -16,8 +16,8 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi-finetuned_train_0719/step_8714_fp32"
+model_dir="output/moshi-finetuned_train_callhome_csj/step_264_fp32"
 
 uv run -m tools.decode_tokens \
-    --tokens_dir "${model_dir}/continuation/generated_tokens" \
-    --output_dir "${model_dir}/continuation/generated_wavs"
+    --tokens_dir "${model_dir}/continuation_csj/generated_tokens" \
+    --output_dir "${model_dir}/continuation_csj/generated_wavs"
