@@ -16,7 +16,7 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi-finetuned_train_callhome_csj/step_264_fp32"
+model_dir="output/moshi-finetuned_train_ohashi/step_8880_fp32"
 
 uv run -m tools.decode_tokens \
     --tokens_dir "${model_dir}/continuation_jchat/generated_tokens" \
