@@ -42,8 +42,8 @@ cat hostfile_mpi
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/J-CHAT/podcast_train/podcast_train-*.parquet \
-processed_data/J-CHAT/youtube_train/youtube_train-*.parquet"
+train_data="processed_data/J-CHAT/podcast_train_by_espnet/podcast_train_by_espnet-*.parquet \
+processed_data/J-CHAT/youtube_train_by_espnet/youtube_train_by_espnet-*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -58,7 +58,7 @@ mpirun \
       --launcher mpi \
       --use_deepspeed \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
-      --output_dir  output/moshi-finetuned_train_0719 \
+      --output_dir  output/moshi_p1_stage2_jchat_dialog \
       --train_data_files ${train_data} \
       --model_dir   init_models/moshiko-both_streams-float32 \
       --model_dtype float32 \
@@ -72,5 +72,5 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 1 \
       --report_to wandb \
-      --project_name moshi-finetuning \
+      --project_name moshi_p1_stage2_jchat_dialog \
       --save_steps 1000
