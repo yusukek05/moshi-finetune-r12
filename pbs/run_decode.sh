@@ -20,4 +20,4 @@ model_dir="output/moshi-finetuned_train_ohashi/step_8880_fp32"
 
 uv run -m tools.decode_tokens \
     --tokens_dir "${model_dir}/continuation_jchat/generated_tokens" \
-    --output_dir "${model_dir}/continuation_jchat/generated_wavs" 
+    --output_dir "${model_dir}/continuation_jchat/generated_wavs"
