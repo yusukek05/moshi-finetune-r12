@@ -68,7 +68,7 @@ def worker(process_id: int, wav_paths: list[Path], args: argparse.Namespace):
         pbar.set_postfix_str(dialogue_name)
 
         # load audio
-        wavs, sr = torchaudio.load(os.path.join(args.audio_dir, f"{dialogue_name}.wav"))
+        wavs, sr = torchaudio.load(wav_path)
         assert (
             wavs.shape[0] == 2
         ), f"Expected stereo audio, got {wavs.shape[0]} channels."
