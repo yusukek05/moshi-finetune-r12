@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 from moshi.models import loaders
 
 from models import (
-    MoshiForFinetuning,
+    MoshiLLMJP3ForFinetuning,
     extend_moshi_modules_for_user_stream,
 )
 
@@ -33,10 +33,16 @@ def init_embedding_module(
     ).to(dtype)
     for token_id in retain_token_ids:
         if token_id >= vocab_size:
-            raise ValueError(f"Token id {token_id} is out of range of the vocab_size {vocab_size}")
+            raise ValueError(
+                f"Token id {token_id} is out of range of the vocab_size {vocab_size}"
+            )
         new_emb_weights[token_id] = emb_weights[token_id]
     emb.weight.data = new_emb_weights
     return emb
+
+
+# 追加
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def main(args):
@@ -45,25 +51,54 @@ def main(args):
         hf_hub_download(args.moshi_lm_repo, args.moshi_lm_name),
         device="cpu",
     )
+
+    # （任意）元のランダム初期化は tempformer 総入替なら基本不要
     if args.init_text_embeddings:
         print("Initializing the text embedding modules...")
         if args.retain_text_token_ids:
-            print(f"Reusing the embeddings of the text tokens: {args.retain_text_token_ids}")
+            print(
+                f"Reusing the embeddings of the text tokens: {args.retain_text_token_ids}"
+            )
         init_embedding_module(moshi_lm.text_emb, args.retain_text_token_ids)
         init_embedding_module(moshi_lm.depformer_text_emb, args.retain_text_token_ids)
 
-    if args.extend_modules_for_user_stream:
-        print("Extending the depth transformer's modules for user stream...")
+    # ✅ LLM-jp を tempformer として使うためのメタ情報だけ取得して保存
+    if args.use_llmjp_tempformer:
+        print(f"Probing LLM-jp: repo={args.src_lm_repo}, rev={args.src_lm_revision}")
+        tok = AutoTokenizer.from_pretrained(
+            args.src_lm_repo, revision=args.src_lm_revision
+        )
+        llm = AutoModelForCausalLM.from_pretrained(
+            args.src_lm_repo,
+            revision=args.src_lm_revision,
+            torch_dtype=torch.float32,
+            device_map={"": "cpu"},
+        )
+
         moshi_lm_kwargs.update(
             {
-                "dep_q": 16,  # 8(moshi) + 8(user)
-                "depformer_context": 16,  # 8(moshi) + 8(user)
+                "llm_tempformer": {
+                    "repo": args.src_lm_repo,
+                    "revision": args.src_lm_revision,
+                    "hidden_size": llm.config.hidden_size,
+                    "vocab_size": llm.config.vocab_size,
+                    "pad_token_id": tok.pad_token_id,
+                    "eos_token_id": tok.eos_token_id,
+                    "bos_token_id": getattr(tok, "bos_token_id", None),
+                    "unk_token_id": getattr(tok, "unk_token_id", None),
+                    # 後段の実装方針（CE の ignore_index=-100 等）を伝えるフラグも入れておくと良い
+                    "labels_ignore_index": -100,
+                }
             }
         )
+
+    if args.extend_modules_for_user_stream:
+        print("Extending the depth transformer's modules for user stream...")
+        moshi_lm_kwargs.update({"dep_q": 16, "depformer_context": 16})
         moshi_lm = extend_moshi_modules_for_user_stream(moshi_lm)
 
-    print("Converting the original MoshiLM to MoshiForFinetuning...")
-    moshi_lm = MoshiForFinetuning.from_original_moshi_lm(
+    print("Converting the original MoshiLM to MoshiLLMJP3ForFinetuning...")
+    moshi_lm = MoshiLLMJP3ForFinetuning.from_original_moshi_lm(
         moshi_lm=moshi_lm, moshi_lm_kwargs=moshi_lm_kwargs
     )
     moshi_lm = moshi_lm.to(getattr(torch, args.model_dtype))
@@ -118,5 +153,25 @@ if __name__ == "__main__":
         action="store_true",
         help="Extend the depth transformer's modules to model user stream",
     )
+
+    # 引数の追加（__main__）
+    parser.add_argument(
+        "--use_llmjp_tempformer",
+        action="store_true",
+        help="Use LLM-jp as the new tempformer (record its config into moshi_lm_kwargs).",
+    )
+    parser.add_argument(
+        "--src_lm_repo",
+        type=str,
+        default="llm-jp/llm-jp-3-7.2b",
+        help="Source LM repo to use as tempformer.",
+    )
+    parser.add_argument(
+        "--src_lm_revision",
+        type=str,
+        default=None,
+        help="Optional HF revision (branch/tag/commit) for the source LM.",
+    )
+
     args = parser.parse_args()
     main(args)

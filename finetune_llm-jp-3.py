@@ -22,7 +22,7 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.moshi_for_finetuning import MoshiForFinetuning
+from models.llmjp3_for_finetuning import MoshiLLMJP3ForFinetuning as MoshiForFinetuning
 from utils import (
     Batch,
     DataCollator,
@@ -327,14 +327,20 @@ def postprocess_args(args: argparse.Namespace):
 
 
 def get_parameters(moshi_lm: MoshiForFinetuning, parameter_name: str):
+    def maybe_params(x):
+        if x is None:
+            return []
+        return x.parameters()
+
     if parameter_name == "all":
         return moshi_lm.parameters()
     elif parameter_name == "tempformer":
+        # LLM 置換後でも text_emb / transformer / text_linear / emb(=ACB埋め込み+射影) を含む
         return itertools.chain(
             moshi_lm.emb.parameters(),
             moshi_lm.text_emb.parameters(),
             moshi_lm.transformer.parameters(),
-            moshi_lm.out_norm.parameters(),
+            maybe_params(moshi_lm.out_norm),
             moshi_lm.text_linear.parameters(),
         )
     elif parameter_name == "depformer":
@@ -357,10 +363,10 @@ def get_parameters(moshi_lm: MoshiForFinetuning, parameter_name: str):
 def tempformer_forward(
     moshi_lm: MoshiForFinetuning, batch: Batch
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-    # 1 Encode text
+    # 1 Encode text (LLM の埋め込みに置換済み)
     text_emb = moshi_lm.text_emb(batch.input_ids[:, 0])
 
-    # 2 Encode audio
+    # 2 Encode audio（各ACBは LLM hidden へ射影済み）
     audio_emb = None
     for acb_index in range(moshi_lm.num_audio_codebooks):
         audio_emb_ = moshi_lm.emb[acb_index](
@@ -368,26 +374,39 @@ def tempformer_forward(
         )
         audio_emb = audio_emb_ if audio_emb is None else audio_emb + audio_emb_
 
-    # 3 Feed embeddings to temporal transformer
+    # 3 Feed embeddings to temporal transformer（LLM を inputs_embeds で駆動）
     tempformer_input = text_emb + audio_emb
     tempformer_out = moshi_lm.transformer(
         tempformer_input, attention_mask=batch.text_attention_mask
     )
-    if moshi_lm.out_norm:
+    if getattr(moshi_lm, "out_norm", None):
         tempformer_out = moshi_lm.out_norm(tempformer_out)
-    text_logits = moshi_lm.text_linear(tempformer_out)
+    text_logits = moshi_lm.text_linear(tempformer_out)  # [B, T, V_llm]
 
     # 4 Compute loss
-    # Upcast to float if we need to compute the loss to avoid potential precision issues
     text_logits = text_logits.float()
     # Shift so that tokens < n predict n
     text_logits = text_logits[..., :-1, :].contiguous()
     text_labels = batch.labels[:, 0, 1:].contiguous()
 
+    # ★ LLM 側設定があれば優先
+    cfg = getattr(moshi_lm, "llm_tempformer_cfg", None)
+    ignore_index = (
+        cfg.get("labels_ignore_index", moshi_lm.zero_token_id)
+        if cfg
+        else moshi_lm.zero_token_id
+    )
+    pad_token_id = (
+        cfg.get("pad_token_id", moshi_lm.text_padding_token_id)
+        if cfg
+        else moshi_lm.text_padding_token_id
+    )
+
+    vocab_size = text_logits.size(-1)
     text_losses = F.cross_entropy(
-        input=text_logits.view(-1, moshi_lm.text_card),
+        input=text_logits.view(-1, vocab_size),
         target=text_labels.view(-1),
-        ignore_index=moshi_lm.zero_token_id,
+        ignore_index=ignore_index,
         reduction="none",
     ).view(text_labels.size())
     text_accuracy = (text_logits.argmax(-1) == text_labels).float()
@@ -396,11 +415,8 @@ def tempformer_forward(
         text_labels.shape == text_losses.shape
     ), f"{text_labels.shape} != {text_losses.shape}"
 
-    non_pad_indices = (text_labels != moshi_lm.text_padding_token_id) & (
-        text_labels != moshi_lm.zero_token_id
-    )  # zero token is ignored
-    # we treat moshi_lm.end_of_text_padding_id as non-padding token
-    pad_indices = text_labels == moshi_lm.text_padding_token_id
+    non_pad_indices = (text_labels != pad_token_id) & (text_labels != ignore_index)
+    pad_indices = text_labels == pad_token_id
 
     result = {
         "non_pad_losses": text_losses[non_pad_indices],
@@ -421,10 +437,8 @@ def depformer_forward(
     depformer_inputs = []
     for acb_index in range(moshi_lm.dep_q):
         if moshi_lm.depformer_multi_linear:
-            # use different linear layers for different audio codebooks
             depformer_input_ = moshi_lm.depformer_in[acb_index](tempformer_out[:, :-1])
         else:
-            # use the same linear layer for all audio codebooks
             depformer_input_ = moshi_lm.depformer_in[0](tempformer_out[:, :-1])
         depformer_inputs.append(depformer_input_)
     depformer_input = torch.stack(depformer_inputs, dim=2)
@@ -437,15 +451,14 @@ def depformer_forward(
     last_token_embs.append(last_token_emb_)
     for acb_index in range(moshi_lm.dep_q - 1):
         last_token_emb_ = moshi_lm.depformer_emb[acb_index](
-            batch.input_ids[:, moshi_lm.audio_offset + acb_index, 1:]  # audio token
+            batch.input_ids[:, moshi_lm.audio_offset + acb_index, 1:]
         )
         last_token_embs.append(last_token_emb_)
     last_token_emb = torch.stack(last_token_embs, dim=2)
 
     # 3 Feed embeddings to rq-transformer
     depformer_input = depformer_input + last_token_emb
-    # flatten batch_size and num_frames
-    depformer_input = torch.flatten(depformer_input, 0, 1)
+    depformer_input = torch.flatten(depformer_input, 0, 1)  # [B*T, Q, H]
     depformer_out = moshi_lm.depformer(depformer_input)
 
     audio_logits = []
@@ -455,18 +468,13 @@ def depformer_forward(
         else:
             audio_logits_ = moshi_lm.linears[0](depformer_out[:, acb_index])
         audio_logits.append(audio_logits_)
-    audio_logits = torch.stack(audio_logits, dim=1)
-    audio_logits = audio_logits.float()
-    # >>> depformer_logits.shape
-    # torch.Size([batch_size * num_frames, dep_q, card])
+    audio_logits = torch.stack(audio_logits, dim=1).float()
 
     # 4 Compute loss
     if model_user_stream:
         audio_labels = batch.labels[:, 1:, 1:].transpose(1, 2).contiguous()
     else:
         audio_labels = batch.labels[:, 1:9, 1:].transpose(1, 2).contiguous()
-    # >>> depformer_labels.shape
-    # torch.Size([batch_size, num_frames, dep_q])
 
     audio_losses = F.cross_entropy(
         input=audio_logits.view(-1, moshi_lm.card),
@@ -525,22 +533,9 @@ def forward(
     batch: Batch,
     args: argparse.Namespace,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-    """
-    Forward pass of the Moshi model
-    1. Temporal Transformer
-    2. Depth Transformer
-    3. Compute loss
-
-    Args:
-        args (argparse.Namespace): input arguments
-        moshi_lm (MoshiForFinetuning): Moshi model
-        batch (Batch): input batch
-    Returns:
-        tuple[torch.Tensor, dict[str, torch.Tensor]]: final loss and logging values
-    """
     log = {}
 
-    # 1 Forward pass of Temporal Transformer
+    # 1 Temporal Transformer
     tempformer_out, temp_result = tempformer_forward(moshi_lm, batch)
     text_loss = 0.0
     if temp_result["non_pad_losses"].size(0) > 0:
@@ -554,7 +549,7 @@ def forward(
     log["accuracy/text_pad"] = temp_result["pad_accuracy"].detach()
     del temp_result
 
-    # 2 Forward pass of Depth Transformer
+    # 2 Depth Transformer
     dep_result = depformer_forward(
         moshi_lm, batch, tempformer_out, args.model_user_stream
     )
@@ -658,7 +653,6 @@ def main():
     )
     logger.info(accelerator.state, main_process_only=False)
 
-    # If passed along, set the training seed now.
     if args.seed is not None:
         set_seed(args.seed)
 
@@ -669,6 +663,16 @@ def main():
         device="cpu",  # accelerator will move the model to the correct device
         dtype=torch.float32,
     )
+
+    # ★ LLM 側の BOS/PAD/ignore_index があれば、前処理に反映
+    llm_cfg = getattr(moshi_lm, "llm_tempformer_cfg", None)
+    text_initial_token_id = getattr(moshi_lm, "text_initial_token_id", None)
+    text_padding_token_id = getattr(moshi_lm, "text_padding_token_id", None)
+    if llm_cfg is not None:
+        if llm_cfg.get("bos_token_id") is not None:
+            text_initial_token_id = llm_cfg["bos_token_id"]
+        if llm_cfg.get("pad_token_id") is not None:
+            text_padding_token_id = llm_cfg["pad_token_id"]
 
     # Set activation checkpointing
     if args.activation_checkpointing:
@@ -721,15 +725,15 @@ def main():
         "max_length": args.max_length,
         "min_length": args.min_length,
         "delays": moshi_lm.delays,
-        "initial_token_ids": [moshi_lm.text_initial_token_id]
+        # ★ LLM 置換時は text の initial/pad を LLM 側に合わせる
+        "initial_token_ids": [text_initial_token_id]
         + [moshi_lm.initial_token_id] * moshi_lm.num_audio_codebooks,
-        "padding_token_ids": [moshi_lm.text_padding_token_id]
+        "padding_token_ids": [text_padding_token_id]
         + [moshi_lm.initial_token_id] * moshi_lm.num_audio_codebooks,
-        "zero_token_id": moshi_lm.zero_token_id,
+        "zero_token_id": moshi_lm.zero_token_id,  # audio 側の ignore は従来通り
     }
     dataset_columns = train_dataset.column_names
     with accelerator.main_process_first():
-        # only main process preprocesses the dataset, then others will use the resulted cache
         train_dataset = train_dataset.map(
             preprocess_function,
             remove_columns=dataset_columns,
@@ -778,7 +782,7 @@ def main():
 
     # Prepare optimizer and learning rate scheduler
     param_groups = [
-        {  # Temporal Transformer
+        {  # Temporal Transformer (LLM側 + ACB射影 + text出力層等)
             "params": get_parameters(moshi_lm, "tempformer"),
             "lr": args.tempformer_learning_rate,
             "weight_decay": args.weight_decay,
@@ -795,8 +799,6 @@ def main():
         lr=args.tempformer_learning_rate,  # for accelerator to set deepspeed's lr
         weight_decay=args.weight_decay,  # for accelerator to set deepspeed's weight decay
     )
-    # `defaults["lr"]` is used by accelerator to set max_lr of deepspeed's scheduler
-    # Ref: Accelerator._prepare_deepspeed()
     optimizer.defaults = {
         "lr": [args.tempformer_learning_rate, args.depformer_learning_rate],
     }
@@ -856,9 +858,7 @@ def main():
             config=config,
             init_kwargs={"wandb": wandb_init_kwargs},
         )
-        config["run_id"] = accelerator.get_tracker(
-            name="wandb", unwrap=True
-        ).id  # for later resume
+        config["run_id"] = accelerator.get_tracker(name="wandb", unwrap=True).id
     os.makedirs(args.output_dir, exist_ok=True)
     with open(os.path.join(args.output_dir, "config.json"), "w") as f:
         json.dump(config, f, indent=4)
@@ -878,7 +878,6 @@ def main():
     if args.resume_from_checkpoint:
         logger.info(f"  Resume from step {current_steps}")
 
-    # Only show the progress bar once on each machine.
     pbar = tqdm(
         range(local_num_steps),
         initial=current_steps,
@@ -888,12 +887,8 @@ def main():
 
     for epoch in range(starting_epoch, args.num_train_epochs):
         if args.resume_from_checkpoint and epoch == starting_epoch:
-            # skip the first epoch if we resume from the middle
-            # if accelerator.use_stateful_dataloader:
-            #     active_dataloader = train_dataloader
-            # else:
             num_batches_to_skip = (
-                current_steps * args.gradient_accumulation_steps  # steps -> batches
+                current_steps * args.gradient_accumulation_steps
             ) % local_num_steps_per_epoch
             active_dataloader = accelerator.skip_first_batches(
                 train_dataloader, num_batches_to_skip
@@ -911,13 +906,7 @@ def main():
             total_loss, log = forward(moshi_lm=moshi_lm, batch=batch, args=args)
             for key, value in log.items():
                 logging_buffer[f"training_{key}"].append(value)
-            # Backward pass
             accelerator.backward(total_loss)
-            # The following update steps are handled by deepseed's backward() in accelerator,
-            # so we don't need to do them here manually
-            # optimizer.step()
-            # lr_scheduler.step()
-            # optimizer.zero_grad()
 
             if (step + 1) % args.gradient_accumulation_steps == 0 or step == len(
                 train_dataloader
@@ -961,7 +950,7 @@ def main():
                             },
                             step=current_steps,
                         )
-                    logging_buffer = collections.defaultdict(list)  # reset
+                    logging_buffer = collections.defaultdict(list)
 
                 # Evaluate the model
                 if args.eval_steps is not None and current_steps % args.eval_steps == 0:

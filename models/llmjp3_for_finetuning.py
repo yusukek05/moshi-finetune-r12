@@ -316,9 +316,9 @@ class MoshiLLMJP3ForFinetuning(LMModel):
         cls,
         moshi_lm: LMModel,
         moshi_lm_kwargs: dict,
-    ) -> "MoshiForFinetuning":
+    ) -> "MoshiLLMJP3ForFinetuning":
         """
-        Initialize `MoshiForFinetuning` from the original `LMModel`.
+        Initialize `MoshiLLMJP3ForFinetuning` from the original `LMModel`.
         """
         # 旧 Moshi を ZeRO-3 互換化して state_dict 抜き出し
         # （transformer 側は触らない方が無難なのでここでは触らない）
@@ -384,7 +384,7 @@ class MoshiLLMJP3ForFinetuning(LMModel):
         save_dir: str,
         device: torch.device | str = "cpu",
         dtype: torch.dtype = torch.bfloat16,
-    ) -> "MoshiForFinetuning":
+    ) -> "MoshiLLMJP3ForFinetuning":
         """
         Load the model from the given directory.
         """
