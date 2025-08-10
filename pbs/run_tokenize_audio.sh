@@ -18,3 +18,4 @@ uv run -m tools.tokenize_audio \
     --output_dir data/CSJ/tokenized_audio/noncore \
     --num_workers 8 \
     --resume
+    
