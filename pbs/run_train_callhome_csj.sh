@@ -59,7 +59,7 @@ mpirun \
       --use_deepspeed \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
-      --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt_callhome_csj.json \
+      --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
       --output_dir  output/moshi-finetuned_train_callhome_csj \
       --train_data_files ${train_data} \
       --model_dir   output/moshi-finetuned_train_0719/step_8714_fp32 \
@@ -70,7 +70,7 @@ mpirun \
       --num_train_epochs 3 \
       --per_device_train_batch_size 1 \
       --gradient_accumulation_steps 1 \
-      --num_warmup_steps 250 \
+      --num_warmup_steps 0 \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
