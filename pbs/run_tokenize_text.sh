@@ -14,8 +14,8 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.tokenize_text \
-    --word_transcript /home/acg17145sv/experiments/0162_dialogue_model/J-CHAT/text_by_espnet/youtube_train \
-    --output_dir data/J-CHAT/tokenized_text/youtube_train_by_espnet \
+    --word_transcript /home/acg17145sv/experiments/0162_dialogue_model/J-CHAT/text_by_espnet/podcast_train \
+    --output_dir data/J-CHAT/tokenized_text/podcast_train_by_espnet \
     --text_tokenizer_repo rinna/japanese-gpt2-medium \
     --text_tokenizer_name spiece.model \
     --text_padding_id 3 \
