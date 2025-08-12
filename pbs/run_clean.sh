@@ -4,6 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ngpus=1
 #PBS -l walltime=02:00:00
+#PBS -j oe
 
 echo "JOB_ID: $PBS_JOBID"
 cd $PBS_O_WORKDIR
@@ -16,7 +17,7 @@ uv sync --python 3.12
 export NO_TORCH_COMPILE=1
 
 uv run -m tools.clean_moshi \
-    --moshi_ft_dir output/moshiko-finetuned_youtube_other/step_6_fp32 \
-    --save_dir output/moshiko-finetuned_youtube_other/step_6_cleaned \
+    --moshi_ft_dir output/moshi-finetuned_train_callhome_csj/step_264_fp32 \
+    --save_dir output/moshi-finetuned_train_callhome_csj/step_264_cleaned \
     --model_dtype float32 \
     --remove_modules_for_user_stream
