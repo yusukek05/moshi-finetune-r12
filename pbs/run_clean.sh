@@ -17,7 +17,7 @@ uv sync --python 3.12
 export NO_TORCH_COMPILE=1
 
 uv run -m tools.clean_moshi \
-    --moshi_ft_dir output/moshi-finetuned_train_callhome_csj/step_264_fp32 \
-    --save_dir output/moshi-finetuned_train_callhome_csj/step_264_cleaned \
+    --moshi_ft_dir output/moshi-finetuned_train_ohashi/step_8880_fp32 \
+    --save_dir output/moshi-finetuned_train_ohashi/step_8880_cleaned \
     --model_dtype float32 \
     --remove_modules_for_user_stream
