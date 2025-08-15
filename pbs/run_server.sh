@@ -6,7 +6,7 @@
 #PBS -l walltime=02:00:00
 
 echo "JOB_ID: $PBS_JOBID"
-cd $PBS_O_WORKDIR
+cd /home/acg17145sv/experiments/0162_dialogue_model/moshi-finetune/
 
 module load python/3.12/3.12.9
 module load cuda/12.6/12.6.1
@@ -14,4 +14,6 @@ module load cuda/12.6/12.6.1
 uv sync --python 3.12
 
 uv run -m moshi.server \
-    --moshi-weight output/moshi-finetuned_train_callhome_csj/step_264_cleaned/model.safetensors
+    --moshi-weight output/moshi-finetuned_train_ohashi/step_8880_cleaned/model.safetensors \
+    --host 0.0.0.0 \
+    --port 8998
