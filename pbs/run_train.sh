@@ -61,16 +61,19 @@ mpirun \
       --output_dir  output/moshi_p1_stage2_jchat_dialog \
       --train_data_files ${train_data} \
       --model_dir   init_models/moshiko-both_streams-float32 \
-      --model_dtype float32 \
+      --model_dtype bfloat16 \
       --model_user_stream \
       --max_length 2048 \
       --min_length 128 \
       --num_train_epochs 1 \
-      --per_device_train_batch_size 8 \
-      --gradient_accumulation_steps 1 \
+      --per_device_train_batch_size 18 \
+      --gradient_accumulation_steps 2 \
+      --tempformer_learning_rate 4.5e-4 \
+      --depformer_learning_rate 4.5e-4 \
       --num_warmup_steps 500 \
       --activation_checkpointing \
       --logging_steps 1 \
       --report_to wandb \
       --project_name moshi_p1_stage2_jchat_dialog \
-      --save_steps 1000
+      --save_steps 1000 \
+  > 0162_train.log 2>&1
