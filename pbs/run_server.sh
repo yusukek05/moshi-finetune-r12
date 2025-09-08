@@ -14,6 +14,7 @@ module load cuda/12.6/12.6.1
 uv sync --python 3.12
 
 uv run -m moshi.server \
-    --moshi-weight output/moshi-finetuned_train_ohashi/step_8880_cleaned/model.safetensors \
+    --moshi-weight output/moshi_p1_stage2_jchat_dialog/step_1968_cleaned/model.safetensors \
     --host 0.0.0.0 \
-    --port 8998
+    --port 8998 \
+    --tokenizer  data/tokenizer/spiece.model
