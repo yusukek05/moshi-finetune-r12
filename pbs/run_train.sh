@@ -22,14 +22,27 @@ uv sync --python 3.12
 export VIRTUAL_ENV="$PWD/.venv"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 
+# ── ランタイム最適化（CPU/ログ/キャッシュ等） ────────────────
+export PYTHONUNBUFFERED=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+export TOKENIZERS_PARALLELISM=false
+
+# 共有キャッシュ（全ランク共通で読める場所推奨）
+export HF_DATASETS_CACHE="$PWD/.cache/huggingface/datasets"
+export TRANSFORMERS_CACHE="$PWD/.cache/huggingface/transformers"
+mkdir -p "$HF_DATASETS_CACHE" "$TRANSFORMERS_CACHE"
+
 # ── NCCL / CUDA env ─────────────────────────────────────────────
 export NCCL_DEBUG=INFO
+export NCCL_ASYNC_ERROR_HANDLING=1          # ← 有効化
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
-export NCCL_NVLS_ENABLE=0 
-unset  NCCL_ASYNC_ERROR_HANDLING
-export NCCL_IB_HCA=mlx5_0  
-unset NCCL_IB_DISABLE
-ulimit -l unlimited 
+export NCCL_BLOCKING_WAIT=1                 # ← ハングを早期に検知
+export NCCL_NVLS_ENABLE=0
+export NCCL_IB_HCA=mlx5_0
+unset  NCCL_IB_DISABLE
+ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
@@ -47,12 +60,16 @@ processed_data/J-CHAT/youtube_train_by_espnet/youtube_train_by_espnet-*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
-  -n  ${WORLD_SIZE}            \
+  -n  ${WORLD_SIZE} \
   --map-by ppr:${GPUS_PER_NODE}:node:PE=1 \
   --bind-to none \
   --oversubscribe \
-  -x NCCL_NVLS_ENABLE \
-  -x NCCL_DEBUG -x NCCL_ASYNC_ERROR_HANDLING -x NCCL_IB_HCA -x NCCL_IB_DISABLE \
+  -hostfile hostfile_mpi \
+  -x NCCL_DEBUG -x NCCL_ASYNC_ERROR_HANDLING -x TORCH_NCCL_ASYNC_ERROR_HANDLING -x NCCL_BLOCKING_WAIT \
+  -x NCCL_NVLS_ENABLE -x NCCL_IB_HCA -x NCCL_IB_DISABLE \
+  -x OMP_NUM_THREADS -x MKL_NUM_THREADS -x NUMEXPR_NUM_THREADS -x TOKENIZERS_PARALLELISM \
+  -x HF_DATASETS_CACHE -x TRANSFORMERS_CACHE \
+  -x PYTHONUNBUFFERED \
   -x LD_LIBRARY_PATH -x PATH \
   uv run finetune.py \
       --launcher mpi \
