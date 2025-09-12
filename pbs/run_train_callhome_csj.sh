@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=2:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train_data_stage_3
+#PBS -N 0162_train_data_jchat_clean
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,16 +33,16 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_stage_3
-NNODES=$(wc -l < hostfile_mpi_stage_3)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_stage_3_jchat_clean
+NNODES=$(wc -l < hostfile_mpi_stage_3_jchat_clean)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_stage_3
+cat hostfile_mpi_stage_3_jchat_clean
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/data_stage_3/*.parquet"
+train_data="/groups/gcg51557/experiments/0215_audio_llm/moshi-finetune/processed_data/j-chat-clean-05/*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -59,7 +59,7 @@ mpirun \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
-      --output_dir  output/moshi_p1_stage3_multi_dialog \
+      --output_dir  output/moshi_p1_stage3_jchat_clean_dialog \
       --train_data_files ${train_data} \
       --model_dir   output/moshi_p1_stage2_jchat_dialog/step_1968_fp32 \
       --model_dtype float32 \
@@ -73,5 +73,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name moshi_p1_stage3_multi_dialog \
-      --save_steps 80
+      --project_name moshi_p1_stage3_jchat_clean_dialog \
+      --save_steps 80 \
+  > 0162_train_jchat_clean.log 2>&1
