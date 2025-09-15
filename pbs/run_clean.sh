@@ -17,7 +17,7 @@ uv sync --python 3.12
 export NO_TORCH_COMPILE=1
 
 uv run -m tools.clean_moshi \
-    --moshi_ft_dir output/moshi_p1_stage3_jchat_clean_dialog/step_2676_fp32 \
-    --save_dir output/moshi_p1_stage3_jchat_clean_dialog/step_2676_cleaned \
+    --moshi_ft_dir output/moshi_p1_stage3_jchat_clean_multi_dialog/step_276_fp32 \
+    --save_dir output/moshi_p1_stage3_jchat_clean_multi_dialog/step_276_cleaned \
     --model_dtype float32 \
     --remove_modules_for_user_stream
