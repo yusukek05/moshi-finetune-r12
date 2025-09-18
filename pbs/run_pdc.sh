@@ -22,8 +22,8 @@ export NCCL_P2P_DISABLE=1
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=lo
 
-model_dir="output/moshi-finetuned_train_ohashi/step_8880_fp32"
-eval_data="processed_data/J-CHAT/podcast_train/podcast_train-001-of-039.parquet"  
+model_dir="output/moshi_p1_stage3_jchat_clean_multi_dialog/step_276_fp32"
+eval_data="processed_data/J-CHAT/podacst_test_by_espnet_lower/podcast_test_by_espnet_lower-001-of-001.parquet"  
 
 uv run accelerate launch \
     --num_machines 1 \
