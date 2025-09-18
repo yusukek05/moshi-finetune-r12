@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=8:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train
+#PBS -N 0162_train_new_jchat
 #PBS -j oe
 
 set -euxo pipefail
@@ -46,17 +46,17 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi
-NNODES=$(wc -l < hostfile_mpi)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_new_jchat
+NNODES=$(wc -l < hostfile_mpi_new_jchat)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi
+cat hostfile_mpi_new_jchat
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/J-CHAT/podcast_train_by_espnet/podcast_train_by_espnet-*.parquet \
-processed_data/J-CHAT/youtube_train_by_espnet/youtube_train_by_espnet-*.parquet"
+train_data="processed_data/J-CHAT/podcast_train_by_espnet_lower/podcast_train_by_espnet_lower-*.parquet \
+processed_data/J-CHAT/youtube_train_by_espnet_lower/youtube_train_by_espnet_lower-*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -64,7 +64,7 @@ mpirun \
   --map-by ppr:${GPUS_PER_NODE}:node:PE=1 \
   --bind-to none \
   --oversubscribe \
-  -hostfile hostfile_mpi \
+  -hostfile hostfile_mpi_new_jchat \
   -x NCCL_DEBUG -x NCCL_ASYNC_ERROR_HANDLING -x TORCH_NCCL_ASYNC_ERROR_HANDLING -x NCCL_BLOCKING_WAIT \
   -x NCCL_NVLS_ENABLE -x NCCL_IB_HCA -x NCCL_IB_DISABLE \
   -x OMP_NUM_THREADS -x MKL_NUM_THREADS -x NUMEXPR_NUM_THREADS -x TOKENIZERS_PARALLELISM \
@@ -75,22 +75,20 @@ mpirun \
       --launcher mpi \
       --use_deepspeed \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
-      --output_dir  output/moshi_p1_stage2_jchat_dialog \
+      --output_dir  output/moshi_stage2_new_jchat \
       --train_data_files ${train_data} \
       --model_dir   init_models/moshiko-both_streams-float32 \
-      --model_dtype bfloat16 \
+      --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
       --min_length 128 \
       --num_train_epochs 1 \
-      --per_device_train_batch_size 18 \
-      --gradient_accumulation_steps 2 \
-      --tempformer_learning_rate 4.5e-4 \
-      --depformer_learning_rate 4.5e-4 \
+      --per_device_train_batch_size 8 \
+      --gradient_accumulation_steps 1 \
       --num_warmup_steps 500 \
       --activation_checkpointing \
       --logging_steps 1 \
       --report_to wandb \
-      --project_name moshi_p1_stage2_jchat_dialog \
+      --project_name moshi_stage2_new_jchat \
       --save_steps 1000 \
-  > 0162_train.log 2>&1
+  > 0162_train_new_jchat.log 2>&1

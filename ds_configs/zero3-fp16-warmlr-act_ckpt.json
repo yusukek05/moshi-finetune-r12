@@ -1,9 +1,7 @@
 {
-    "bf16": {
-        "enabled": true
-    },
     "fp16": {
-        "enabled": false
+        "enabled": true,
+        "initial_scale_power": 10
     },
     "optimizer": {
         "type": "AdamW",
