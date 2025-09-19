@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=8:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train_new_jchat
+#PBS -N 0162_train_old_jchat
 #PBS -j oe
 
 set -euxo pipefail
@@ -46,17 +46,17 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_new_jchat
-NNODES=$(wc -l < hostfile_mpi_new_jchat)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_old_jchat
+NNODES=$(wc -l < hostfile_mpi_old_jchat)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_new_jchat
+cat hostfile_mpi_old_jchat
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/J-CHAT/podcast_train_by_espnet_lower/podcast_train_by_espnet_lower-*.parquet \
-processed_data/J-CHAT/youtube_train_by_espnet_lower/youtube_train_by_espnet_lower-*.parquet"
+train_data="processed_data/J-CHAT/podcast_train/podcast_train-*.parquet \
+processed_data/J-CHAT/youtube_train/youtube_train-*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -64,7 +64,7 @@ mpirun \
   --map-by ppr:${GPUS_PER_NODE}:node:PE=1 \
   --bind-to none \
   --oversubscribe \
-  -hostfile hostfile_mpi_new_jchat \
+  -hostfile hostfile_mpi_old_jchat \
   -x NCCL_DEBUG -x NCCL_ASYNC_ERROR_HANDLING -x TORCH_NCCL_ASYNC_ERROR_HANDLING -x NCCL_BLOCKING_WAIT \
   -x NCCL_NVLS_ENABLE -x NCCL_IB_HCA -x NCCL_IB_DISABLE \
   -x OMP_NUM_THREADS -x MKL_NUM_THREADS -x NUMEXPR_NUM_THREADS -x TOKENIZERS_PARALLELISM \
@@ -75,7 +75,7 @@ mpirun \
       --launcher mpi \
       --use_deepspeed \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
-      --output_dir  output/moshi_stage2_new_jchat \
+      --output_dir  output/moshi_stage2_old_jchat \
       --train_data_files ${train_data} \
       --model_dir   init_models/moshiko-both_streams-float32 \
       --model_dtype float32 \
@@ -89,6 +89,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 1 \
       --report_to wandb \
-      --project_name moshi_stage2_new_jchat \
+      --project_name moshi_stage2_old_jchat \
       --save_steps 1000 \
-  > 0162_train_new_jchat.log 2>&1
+  > 0162_train_old_jchat.log 2>&1
