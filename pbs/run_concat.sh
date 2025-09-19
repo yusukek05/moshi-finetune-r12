@@ -14,7 +14,7 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.prepare_dataset \
-    --tokenized_text_dir data/J-CHAT/tokenized_text/podcast_test_by_espnet_lower \
-    --tokenized_audio_dir data/J-CHAT/tokenized_audio/podcast_test \
-    --output_prefix processed_data/podcast_test_by_espnet_lower
+    --tokenized_text_dir data/J-CHAT/tokenized_text/youtube_train_by_espnet_lower \
+    --tokenized_audio_dir data/J-CHAT/tokenized_audio/youtube_train \
+    --output_prefix processed_data/J-CHAT/youtube_train_by_espnet_lower/youtube_train_by_espnet_lower
 
