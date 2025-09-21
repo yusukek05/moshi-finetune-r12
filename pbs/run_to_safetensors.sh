@@ -21,6 +21,6 @@ export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
 uv run -m tools.zero_to_fp32 \
-    output/moshi_p1_stage3_jchat_clean_multi_dialog/step_276 \
-    output/moshi_p1_stage3_jchat_clean_multi_dialog/step_276_fp32 \
+    output/moshi_stage2_old_jchat/step_8714 \
+    output/moshi_stage2_old_jchat/step_8714_fp32 \
     --moshi_lm_kwargs_path init_models/moshiko-both_streams-float32/moshi_lm_kwargs.json
