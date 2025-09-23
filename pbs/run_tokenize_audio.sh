@@ -14,7 +14,7 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.tokenize_audio \
-    --audio_dir /home/acg17145sv/experiments/0162_dialogue_model/J-CHAT/separated/podcast_test \
-    --output_dir data/J-CHAT/tokenized_audio/podcast_test \
+    --audio_dir /home/acg17145sv/experiments/0162_dialogue_model/data_stage_3/Tabidachi/audio \
+    --output_dir data/data_stage_3/Tabidachi/tokenized_audio \
     --num_workers 8 \
     --resume
