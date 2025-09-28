@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=2:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train_old_jchat_clean
+#PBS -N 0162_train_tabidachi
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,16 +33,16 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_stage_3_jchat_clean
-NNODES=$(wc -l < hostfile_mpi_stage_3_jchat_clean)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_stage_3_tabidachi
+NNODES=$(wc -l < hostfile_mpi_stage_3_tabidachi)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_stage_3_jchat_clean
+cat hostfile_mpi_stage_3_tabidachi
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="/groups/gcg51557/experiments/0215_audio_llm/moshi-finetune/processed_data/j-chat-clean-04/*.parquet"
+train_data="processed_data/data_stage_3/Tabidachi-001-of-001.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -59,7 +59,7 @@ mpirun \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
-      --output_dir  output/moshi_stage3_old_jchat_clean \
+      --output_dir  output/moshi_stage3_tabidachi \
       --train_data_files ${train_data} \
       --model_dir   output/moshi_stage2_old_jchat/step_8714_fp32 \
       --model_dtype float32 \
@@ -73,6 +73,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name moshi_stage3_old_jchat_clean \
+      --project_name moshi_stage3_tabidachi \
       --save_steps 80 \
-  > 0162_train_old_jchat_clean.log 2>&1
+  > 0162_train_tabidachi2.log 2>&1
