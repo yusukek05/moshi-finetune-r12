@@ -22,7 +22,7 @@ export NCCL_P2P_DISABLE=1
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=lo
 
-model_dir="output/moshi_stage3_tabidachi/step_498_fp32"
+model_dir="output/moshi_stage3_old_jchat_clean_tabidachi/step_498_fp32"
 eval_data="processed_data/J-CHAT/podacst_test_by_espnet_lower/podcast_test_by_espnet_lower-001-of-001.parquet"  
 
 uv run accelerate launch \
