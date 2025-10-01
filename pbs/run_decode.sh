@@ -3,7 +3,7 @@
 #PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ngpus=1
-#PBS -l walltime=02:00:00
+#PBS -l walltime=00:30:00
 #PBS -j oe
 
 echo "JOB_ID: $PBS_JOBID"
@@ -16,7 +16,7 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi_stage3_old_jchat_clean_tabidachi/step_498_fp32"
+model_dir="output/20250929-0030+j-chat+j-chat-clean-tabidachi/step_6150_fp32"
 
 uv run -m tools.decode_tokens \
     --tokens_dir "${model_dir}/continuation_jchat/generated_tokens" \
