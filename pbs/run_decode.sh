@@ -16,8 +16,8 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/20250929-0030+j-chat+j-chat-clean-tabidachi/step_6150_fp32"
+model_dir="output/moshi_stage3_new_jchat_clean_tabidachi_csj/step_57_fp32"
 
 uv run -m tools.decode_tokens \
-    --tokens_dir "${model_dir}/continuation_jchat/generated_tokens" \
-    --output_dir "${model_dir}/continuation_jchat/generated_wavs" 
+    --tokens_dir "${model_dir}/continuation_jchat_full/generated_tokens" \
+    --output_dir "${model_dir}/continuation_jchat_full/generated_wavs" 
