@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=2:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train_tabidachi
+#PBS -N 0162_train_new_jchat_tabidachi
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,12 +33,12 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_stage_3_tabidachi
-NNODES=$(wc -l < hostfile_mpi_stage_3_tabidachi)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_moshi_stage3_new_jchat_tabidachi
+NNODES=$(wc -l < hostfile_mpi_moshi_stage3_new_jchat_tabidachi)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_stage_3_tabidachi
+cat hostfile_mpi_moshi_stage3_new_jchat_tabidachi
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
@@ -59,9 +59,9 @@ mpirun \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
-      --output_dir  output/moshi_stage3_tabidachi \
+      --output_dir  output/moshi_stage3_new_jchat_tabidachi \
       --train_data_files ${train_data} \
-      --model_dir   output/moshi_stage2_old_jchat/step_8714_fp32 \
+      --model_dir   output/moshi_stage2_new_jchat/step_8853_fp32 \
       --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
@@ -73,6 +73,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name moshi_stage3_tabidachi \
+      --project_name moshi_stage3_new_jchat_tabidachi \
       --save_steps 80 \
-  > 0162_train_tabidachi2.log 2>&1
+  > 0162_train_new_jchat_tabidachi_$PBS_JOBID.log 2>&1
