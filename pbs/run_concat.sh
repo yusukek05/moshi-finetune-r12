@@ -14,7 +14,7 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.prepare_dataset \
-    --tokenized_text_dir data/data_stage_3/Tabidachi/tokenized_text \
-    --tokenized_audio_dir data/data_stage_3/Tabidachi/tokenized_audio \
-    --output_prefix processed_data/data_stage_3/Tabidachi
+    --tokenized_text_dir data/data_stage_3/Tabidachi/test/tokenized_text \
+    --tokenized_audio_dir data/data_stage_3/Tabidachi/test/tokenized_audio \
+    --output_prefix processed_data/data_stage_3/test/Tabidachi
 
