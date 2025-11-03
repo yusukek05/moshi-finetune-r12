@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P gcg51557                
 #PBS -q R9920251000
-#PBS -v RTYPE=rt_HF,USE_SSH=1
+#PBS -v RTYPE=rt_HG,USE_SSH=1
 #PBS -l select=1:ngpus=1
 #PBS -l walltime=00:30:00
 #PBS -j oe
@@ -16,8 +16,8 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi_stage3_new_jchat_clean_tabidachi_csj/step_57_fp32"
+model_dir="output/moshi_init_text_emb_stage2_new_jchat/step_8853_fp32"
 
 uv run -m tools.decode_tokens \
-    --tokens_dir "${model_dir}/continuation_jchat_full/generated_tokens" \
-    --output_dir "${model_dir}/continuation_jchat_full/generated_wavs" 
+    --tokens_dir "${model_dir}/continuation_tabidachi_test/generated_tokens" \
+    --output_dir "${model_dir}/continuation_tabidachi_test/generated_wavs" 

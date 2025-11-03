@@ -22,8 +22,8 @@ export NCCL_P2P_DISABLE=1
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=lo
 
-model_dir="output/moshi_stage3_new_jchat_clean_tabidachi_csj/step_57_fp32"
-eval_data="processed_data/J-CHAT/podcast_test_by_espnet_lower/podcast_test_by_espnet_lower-001-of-001.parquet"  
+model_dir="output/moshi_init_text_emb_stage2_new_jchat/step_8853_fp32"
+eval_data="processed_data/data_stage_3/test/Tabidachi-001-of-001.parquet"  
 
 my_model_dir="output/20250929-0030+j-chat+j-chat-clean-tabidachi/step_6150_fp32"
 
@@ -31,7 +31,7 @@ uv run accelerate launch \
     --num_machines 1 \
     --num_processes 4 \
     generate.py \
-        --output_dir "${model_dir}/continuation_jchat_full" \
+        --output_dir "${model_dir}/continuation_tabidachi_test" \
         --model_dir "${model_dir}" \
         --eval_data_files "${eval_data}" \
         --prompt_length 125 \
