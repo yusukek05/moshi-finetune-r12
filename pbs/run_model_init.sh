@@ -13,6 +13,7 @@ uv sync --python 3.12
 
 uv run -m tools.init_moshi_for_ft \
     --moshi_lm_repo kyutai/moshiko-pytorch-bf16 \
-    --save_dir init_models/moshiko-both_streams-float32 \
+    --save_dir init_models/moshiko-both_streams-init_text_emb-float32 \
     --model_dtype float32 \
+    --init_text_embeddings \
     --extend_modules_for_user_stream
