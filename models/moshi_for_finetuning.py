@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import functools
+from glob import glob
 from collections import OrderedDict
 
 import torch
@@ -17,6 +19,8 @@ from moshi.modules.transformer import (
     multi_linear,
 )
 from safetensors.torch import load_model, save_file
+
+from models.modeling_moshi_llama import MoshiLlama
 
 
 def expose_linear_weights_for_zero3(
@@ -304,3 +308,138 @@ class MoshiForFinetuning(LMModel):
         moshi_lm.moshi_lm_kwargs = moshi_lm_kwargs
 
         return moshi_lm
+    
+class MoshiLlamaForFinetuning(MoshiLlama):
+    """
+    MoshiLM with Llama
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # DeepSpeed Zero-3 compatibility
+        # Do not patch the transformer layers, as they are huggingface's Llama layers
+        ## 1. Expose linear layer weights
+        expose_linear_weights_for_zero3(self)
+        ## 2. Apply patches for forward functions
+        for layer in self.depformer.layers:
+            for gating in layer.gating:
+                gating.forward = activation_gating_forward.__get__(gating)
+            layer.self_attn.forward = mha_forward.__get__(layer.self_attn)
+        # Implement activation checkpointing
+        self.depformer.activation_checkpointing = False
+        self.depformer.forward = transformer_forward.__get__(self.depformer)
+
+    def enable_activation_checkpointing(self, checkpointing_func):
+        func = functools.partial(
+            torch.utils.checkpoint.checkpoint,
+            use_reentrant=True
+        ) 
+        self.transformer._set_gradient_checkpointing(
+            enable=True, gradient_checkpointing_func=func#checkpointing_func
+        )
+        self.depformer.activation_checkpointing = True
+        self.depformer.checkpointing_func = checkpointing_func
+
+    def disable_activation_checkpointing(self):
+        self.transformer._set_gradient_checkpointing(enable=False)
+        self.depformer.activation_checkpointing = False
+
+    @classmethod
+    def from_original_moshi_llama(
+        cls,
+        moshi_llama: MoshiLlama,
+        moshi_llama_kwargs: dict,
+    ) -> "MoshiLlamaForFinetuning":
+        """
+        Initialize `MoshiLlamaForFinetuning` from the original `MoshiLlama`.
+        """
+        # Expose linear layer weights for DeepSpeed Zero-3 compatibility
+        expose_linear_weights_for_zero3(moshi_llama)
+        state_dict = moshi_llama.state_dict()
+        device = next(moshi_llama.parameters()).device
+        dtype = next(moshi_llama.parameters()).dtype
+
+        # Clear the original model to save memory
+        del moshi_llama
+
+        # Initialize the new model
+        moshi_llama_ft = cls(device=device, dtype=dtype, **moshi_llama_kwargs).to(device=device, dtype=dtype)
+        moshi_llama_ft.load_state_dict(state_dict, strict=True)
+
+        # Store the kwargs for the later use
+        moshi_llama_ft.moshi_llama_kwargs = moshi_llama_kwargs
+
+        return moshi_llama_ft
+
+    def to_original_moshi_llama(self) -> MoshiLlama:
+        """
+        Convert the model to the original `MoshiLlama`.
+        """
+        state_dict = self.state_dict()
+        device = next(self.parameters()).device
+        dtype = next(self.parameters()).dtype
+
+        # Convert the state dict to the original format
+        state_dict = restore_linear_weights_from_exposed_state_dict(state_dict)
+
+        # Initialize the original model
+        moshi_llama = MoshiLlama(device=device, dtype=dtype, **self.moshi_llama_kwargs).to(
+            device=device, dtype=dtype
+        )
+        moshi_llama.load_state_dict(state_dict, strict=True)
+
+        return moshi_llama
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        save_dir: str,
+        device: torch.device | str = "cpu",
+        dtype: torch.dtype = torch.bfloat16,
+    ) -> "MoshiLlamaForFinetuning":
+        """
+        Load the model from the given directory.
+        """
+        # Load the kwargs
+        with open(os.path.join(save_dir, "moshi_llama_kwargs.json")) as f:
+            moshi_llama_kwargs = json.load(f)
+        # Initialize the model
+        moshi_llama = cls(device=device, dtype=dtype, **moshi_llama_kwargs).to(device=device, dtype=dtype)
+        # Load the model
+        load_model(moshi_llama, os.path.join(save_dir, "model.safetensors"))
+        moshi_llama.moshi_llama_kwargs = moshi_llama_kwargs
+        return moshi_llama
+
+    def save_pretrained(self, save_dir: str):
+        """
+        Save the model to the given directory.
+        """
+        os.makedirs(save_dir, exist_ok=True)
+        # Save the model
+        save_file(self.state_dict(), os.path.join(save_dir, "model.safetensors"))
+        # Save the kwargs
+        with open(os.path.join(save_dir, "moshi_llama_kwargs.json"), "w") as f:
+            json.dump(self.moshi_llama_kwargs, f, indent=4)
+
+class AutoMoshiForFinetuning:
+    """
+    Auto class for MoshiForFinetuning and MoshiLlamaForFinetuning.
+    """
+    @classmethod
+    def from_pretrained(
+        cls,
+        save_dir: str,
+        device: torch.device | str = "cpu",
+        dtype: torch.dtype = torch.bfloat16
+    ) -> MoshiForFinetuning | MoshiLlamaForFinetuning:
+        """
+        Load the model from the given directory.
+        """
+        # get moshi_*_kwargs.json file
+        kwargs_path = glob(os.path.join(save_dir, "moshi_*_kwargs.json"))[0]
+        if kwargs_path.endswith("moshi_lm_kwargs.json"):
+            return MoshiForFinetuning.from_pretrained(save_dir, device=device, dtype=dtype)
+        elif kwargs_path.endswith("moshi_llama_kwargs.json"):
+            return MoshiLlamaForFinetuning.from_pretrained(save_dir, device=device, dtype=dtype)
+        else:
+            raise ValueError(f"Unknown kwargs file: {kwargs_path}. Expected moshi_lm_kwargs.json or moshi_llama_kwargs.json.")
