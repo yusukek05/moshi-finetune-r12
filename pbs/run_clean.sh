@@ -17,7 +17,7 @@ uv sync --python 3.12
 export NO_TORCH_COMPILE=1
 
 uv run -m tools.clean_moshi \
-    --moshi_ft_dir output/llm-jp-3-finetuned_train/step_18_fp32 \
-    --save_dir output/llm-jp-3-finetuned_train/step_18_cleaned \
+    --moshi_ft_dir output/moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1/step_3978_fp32 \
+    --save_dir output/moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1/step_3978_cleaned \
     --model_dtype float32 \
     --remove_modules_for_user_stream
