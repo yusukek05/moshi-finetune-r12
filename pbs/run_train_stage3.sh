@@ -1,10 +1,10 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q R9920251000
+#PBS -q rt_HF
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=2:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train_new_jchat_csj_tabidachi
+#PBS -N 0162_train_new_jchat_init_text_emb_llmjp-zoom1
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,16 +33,16 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_moshi_stage3_new_jchat_csj_tabidachi
-NNODES=$(wc -l < hostfile_mpi_moshi_stage3_new_jchat_csj_tabidachi)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1
+NNODES=$(wc -l < hostfile_mpi_moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_moshi_stage3_new_jchat_csj_tabidachi
+cat hostfile_mpi_moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/data_stage_3/Tabidachi-001-of-001.parquet"
+train_data="processed_data/llmjp-zoom1/train-001-of-001.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -59,9 +59,9 @@ mpirun \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
-      --output_dir  output/moshi_stage3_new_jchat_csj_tabidachi \
+      --output_dir  output/moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1 \
       --train_data_files ${train_data} \
-      --model_dir   output/moshi_stage3_new_jchat_csj/step_57_fp32 \
+      --model_dir   output/moshi_init_text_emb_stage2_new_jchat/step_8853_fp32 \
       --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
@@ -73,6 +73,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name moshi_stage3_new_jchat_csj_tabidachi \
+      --project_name moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1 \
       --save_steps 80 \
-  > 0162_train_new_jchat_csj_tabidachi_$PBS_JOBID.log 2>&1
+  > 0162_train_new_jchat_init_text_emb_llmjp-zoom1_$PBS_JOBID.log 2>&1
