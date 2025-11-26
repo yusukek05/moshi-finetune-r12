@@ -14,8 +14,8 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 
 uv run -m tools.tokenize_text \
-    --word_transcript /home/acg17145sv/experiments/0162_dialogue_model/AsReX/data/Tabidachi/text/ \
-    --output_dir data/data_stage_3/Tabidachi/test/tokenized_text \
+    --word_transcript /home/acg17145sv/experiments/0162_dialogue_model/AsReX/data/llmjp-zoom1/text/ \
+    --output_dir data/llmjp-zoom1/tokenized_text \
     --text_tokenizer_repo rinna/japanese-gpt2-medium \
     --text_tokenizer_name spiece.model \
     --text_padding_id 3 \
