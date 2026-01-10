@@ -53,16 +53,45 @@ def decode_audio(audio_tokens: np.ndarray, mimi: loaders.MimiModel) -> np.ndarra
     return wav
 
 
+# --------------- 追加: 語彙外対策 ---------------
+
+AUDIO_VOCAB_SIZE = 2048  # Mimi の語彙は 0..2047
+
+
+def strip_leading_bos(
+    audio_tokens: np.ndarray, vocab_size: int = AUDIO_VOCAB_SIZE
+) -> np.ndarray:
+    """
+    先頭時刻列(t=0)に語彙外(>= vocab_size)が含まれていれば、その列を連続で剥がす。
+    BOS(=2048)対策。BOSが無いファイルは無変更。
+    """
+    while audio_tokens.shape[1] > 0 and np.any(audio_tokens[:, 0] >= vocab_size):
+        audio_tokens = audio_tokens[:, 1:]
+    return audio_tokens
+
+
+def sanitize_oov(
+    audio_tokens: np.ndarray, vocab_size: int = AUDIO_VOCAB_SIZE
+) -> np.ndarray:
+    """
+    先頭剥離後に、まだ語彙外(>= vocab_size)が残っていれば 0 に置換して続行。
+    （大量バッチでも止まらない運用向け）
+    """
+    mask = audio_tokens >= vocab_size
+    if np.any(mask):
+        num = int(mask.sum())
+        # 置換前に一度コピー（元配列はメモリマップの可能性もあるため）
+        audio_tokens = audio_tokens.copy()
+        audio_tokens[mask] = 0
+        print(f"[warn] Replaced {num} OOV tokens (>= {vocab_size}) with 0")
+    return audio_tokens
+
+
+# ------------------------------------------------
+
+
 def decode_tokens(rank: int, list_of_tokens_path: list[str], args: argparse.Namespace):
-    """
-    Decode tokens.
-    Args:
-        rank (int): Rank of the process.
-        list_of_tokens_path (list[str]): List of paths to the token files to decode.
-            each file should be `*.npy` file.
-        args (argparse.Namespace): Arguments.
-    """
-    # Load the text tokenizer
+    # Load the text tokenizer (未使用でも読み込みだけしておく)
     text_tokenizer = SentencePieceProcessor(  # noqa: F841
         hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name)
     )
@@ -77,9 +106,21 @@ def decode_tokens(rank: int, list_of_tokens_path: list[str], args: argparse.Name
         tokens = np.load(tokens_path)  # (1+K, T)
 
         text_tokens = tokens[0]  # noqa: F841
-        audio_tokens = tokens[1:]
+        audio_tokens = tokens[1:]  # (K, T) ここにBOS(=2048)が来るケースがある
 
-        # text = decode_text(text_tokens, text_tokenizer) # str
+        # ✅ 先頭列の BOS(=語彙外) を剥がす
+        audio_tokens = strip_leading_bos(audio_tokens, AUDIO_VOCAB_SIZE)
+
+        # ✅ 念のため、残存語彙外があれば 0 に置換（止めたい場合はここで例外にしても良い）
+        audio_tokens = sanitize_oov(audio_tokens, AUDIO_VOCAB_SIZE)
+
+        # 先頭剥離で空になった(=全列BOSだった)等の想定外をスキップ
+        if audio_tokens.shape[1] == 0:
+            print(
+                f"[skip] No audio tokens after BOS trimming: {os.path.basename(tokens_path)}"
+            )
+            continue
+
         audio = decode_audio(audio_tokens, mimi)  # (2, wav_len)
 
         output_wav_path = os.path.join(
