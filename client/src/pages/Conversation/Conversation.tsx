@@ -354,6 +354,7 @@ export const Conversation: FC<ConversationProps> = ({
                     1
                   )}
                   currentTimeSec={currentTimeSec || 0}
+                  displayColor={params.displayColor}
                 />
               </div>
               {/* 既存のビジュアライザーは視覚的に非表示（analyser取得のためだけに使用） */}
@@ -382,7 +383,8 @@ export const Conversation: FC<ConversationProps> = ({
                 {videoURL && getExtension("video") === "webm" && <div><a href="https://restream.io/tools/webm-to-mp4-converter" target="_blank" rel="noreferrer" className="explain-links pt-2 text-center italic block">How to convert to mp4</a></div>}
               </div>
             </div>
-            <div className="scrollbar player-text border-2 border-white " ref={textContainerRef}>
+            {/* テキスト表示は波形ビジュアライザー内に統合されたため非表示 */}
+            <div className="hidden scrollbar player-text border-2 border-white " ref={textContainerRef}>
               <TextDisplay containerRef={textContainerRef} displayColor={params.displayColor} />
             </div>
             <div className="player-stats hidden md:block">
