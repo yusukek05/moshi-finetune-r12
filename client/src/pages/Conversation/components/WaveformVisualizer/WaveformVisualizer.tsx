@@ -9,10 +9,9 @@ type WaveformVisualizerProps = {
   displayColor?: boolean;
 };
 
-const WIDTH = 1920;
-const HEIGHT = 1080;
 const FPS = 30;
 const ENVELOPE_SAMPLES = 500; // エンベロープのサンプル数
+const DPR = typeof window !== "undefined" ? (window.devicePixelRatio || 1) : 1;
 
 // ガウシアン平滑化（簡易版：移動平均）
 const smoothEnvelope = (data: number[], windowSize: number = 5): number[] => {
@@ -110,7 +109,9 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
   //     });
   //   }
   // }, [aiText]);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasSizeRef = useRef<{ width: number; height: number }>({ width: 960, height: 540 });
   const [aiEnvelope, setAiEnvelope] = useState<number[]>(new Array(ENVELOPE_SAMPLES).fill(0));
   const [humanEnvelope, setHumanEnvelope] = useState<number[]>(new Array(ENVELOPE_SAMPLES).fill(0));
   const envelopeHistoryRef = useRef<{ ai: number[]; human: number[] }>({
@@ -177,6 +178,30 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
   useEffect(() => { aiEnvelopeRef.current = aiEnvelope; }, [aiEnvelope]);
   useEffect(() => { humanEnvelopeRef.current = humanEnvelope; }, [humanEnvelope]);
 
+  // コンテナサイズに追従して Canvas を resize
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+
+    const resizeCanvas = () => {
+      const rect = container.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w === 0 || h === 0) return;
+      canvas.width = w * DPR;
+      canvas.height = h * DPR;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      canvasSizeRef.current = { width: w * DPR, height: h * DPR };
+    };
+
+    resizeCanvas();
+    const ro = new ResizeObserver(resizeCanvas);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
   // Canvas drawing loop - runs independently of data updates
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -190,9 +215,6 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
       return;
     }
 
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
-
     let drawCount = 0;
     const draw = () => {
       drawCount++;
@@ -202,33 +224,42 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
       const currentAiEnvelope = aiEnvelopeRef.current;
       const currentHumanEnvelope = humanEnvelopeRef.current;
 
+      const W = canvasSizeRef.current.width;
+      const H = canvasSizeRef.current.height;
+      if (W === 0 || H === 0) return;
+
+      // スケール係数（基準: 1920x1080）
+      const sx = W / 1920;
+      const sy = H / 1080;
+      const s = Math.min(sx, sy); // フォントサイズ等に使う統一スケール
+
       // 背景を塗りつぶす
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      ctx.fillRect(0, 0, W, H);
 
       // タイトル
       ctx.fillStyle = "#8DBAE8";
-      ctx.font = "bold 64px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.font = `bold ${Math.round(64 * s)}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText("LLM-jp-Moshi", WIDTH / 2, 110);
+      ctx.fillText("LLM-jp-Moshi", W / 2, Math.round(110 * sy));
 
       ctx.fillStyle = "#555555";
-      ctx.font = "28px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.font = `${Math.round(28 * s)}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.fillText(
         "A Japanese Full-duplex Spoken Dialogue System",
-        WIDTH / 2,
-        195
+        W / 2,
+        Math.round(195 * sy)
       );
 
       // 波形エリアのレイアウト
-      const topMargin = 220;
-      const bottomMargin = 80;
-      const availableHeight = HEIGHT - topMargin - bottomMargin;
+      const topMargin = Math.round(220 * sy);
+      const bottomMargin = Math.round(80 * sy);
+      const availableHeight = H - topMargin - bottomMargin;
       const rowHeight = availableHeight / 2;
       const aiCenterY = topMargin + rowHeight / 2;
       const humanCenterY = topMargin + rowHeight + rowHeight / 2;
-      const waveformWidth = WIDTH * 0.9;
-      const leftX = WIDTH * 0.05;
+      const waveformWidth = W * 0.9;
+      const leftX = W * 0.05;
       const rightX = leftX + waveformWidth;
 
       // 現在位置を 0〜1 に正規化
@@ -246,8 +277,6 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
         const n = env.length;
         const stepX = waveformWidth / (n - 1);
 
-        // リアルタイム表示：常に全波形を濃い色で表示
-        // 振幅が0の場合は描画をスキップ（パフォーマンス向上）
         const hasData = env.some(v => v > 0.01);
         if (!hasData) return;
 
@@ -256,9 +285,8 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
 
         for (let i = 0; i < n; i++) {
           const x = leftX + i * stepX;
-          // 振幅を計算（0の場合は中心線に）
           const rawAmp = Math.max(env[i], 0);
-          const amp = rawAmp * (rowHeight / 2) * 0.9; // 少し大きく表示
+          const amp = rawAmp * (rowHeight / 2) * 0.9;
           const yTop = centerY - amp;
 
           if (!pathStarted) {
@@ -269,7 +297,6 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
           }
         }
 
-        // 下側のパス
         for (let i = n - 1; i >= 0; i--) {
           const x = leftX + i * stepX;
           const rawAmp = Math.max(env[i], 0);
@@ -279,12 +306,10 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
         }
 
         ctx.closePath();
-        // 常に濃い色で表示
         const alphaHex = Math.round(alphaPast * 255).toString(16).padStart(2, "0");
         ctx.fillStyle = `${colorBase}${alphaHex}`;
         ctx.fill();
 
-        // アウトラインも描画（より見やすく）
         ctx.strokeStyle = colorBase;
         ctx.lineWidth = 1;
         ctx.stroke();
@@ -299,18 +324,17 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
       };
 
       // AI ラベル
+      const labelFontSize = Math.round(32 * s);
       ctx.fillStyle = "#A78DC9";
-      ctx.font = "32px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.font = `${labelFontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      // ラベルの位置を画面内に収める（左端から10pxのマージン）
-      const labelX = Math.max(10, leftX - 80);
+      const labelX = Math.max(10, leftX - Math.round(80 * sx));
       ctx.fillText("AI", labelX, aiCenterY);
 
       // Human ラベル
       ctx.fillStyle = "#F5A0B4";
-      // Humanラベルの位置も画面内に収める
-      const humanLabelX = Math.max(10, leftX - 120);
+      const humanLabelX = Math.max(10, leftX - Math.round(120 * sx));
       ctx.fillText("Human", humanLabelX, humanCenterY);
 
       // AI 波形（紫）
@@ -319,24 +343,21 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
         drawEnvelope(currentAiEnvelope, aiCenterY, "#A78DC9", 0.85);
       }
 
-      // AIテキストを波形の下に表示（カーソル位置に応じて、トークンずつ、色付け対応）
+      // AIテキストを波形の下に表示
       if (currentAiText && currentAiText.length > 0 && tokenTimingsRef.current.length > 0) {
-        // カーソル位置（t: 0〜1）までのトークンのみを表示
         const displayedTokenTimings: typeof tokenTimingsRef.current = [];
 
         for (const timing of tokenTimingsRef.current) {
-          // トークンが生成された進行度がカーソル位置より前なら表示
-          // timing.timeは0〜1の相対位置
           if (timing.time <= t) {
             displayedTokenTimings.push(timing);
           } else {
-            // カーソル位置を超えたら終了
             break;
           }
         }
 
         if (displayedTokenTimings.length > 0) {
-          const textY = aiCenterY + rowHeight / 2 + 20;
+          const textFontSize = Math.max(12, Math.round(20 * s));
+          const textY = aiCenterY + rowHeight / 2 + Math.round(20 * sy);
           const textDisplayColors = [
             "#d19bf7", "#d7acf6", "#debdf5", "#e4cef4",
             "#ebe0f3", "#eef2f0", "#c8ead9", "#a4e2c4",
@@ -351,7 +372,6 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
                 : Math.floor(v);
           }
 
-          // 表示されるトークンの中で最新のインデックス
           const displayedCurrentIndex = displayedTokenTimings.length > 0
             ? displayedTokenTimings[displayedTokenTimings.length - 1].index
             : -1;
@@ -359,57 +379,43 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
 
-          // テキストを右から左に流れるように表示
-          // 最新のトークンがカーソル位置に表示され、古いトークンは左に流れる
-          const lineHeight = 28;
+          const lineHeight = Math.round(28 * s);
           let y = textY;
 
-          // カーソル位置から左に向かってテキストを描画
-          // まず、表示するトークンの総幅を計算
-          ctx.font = "normal 20px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+          ctx.font = `normal ${textFontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
           const tokenWidths: number[] = [];
 
           for (const timing of displayedTokenTimings) {
             const tokenMetrics = ctx.measureText(timing.token);
-            const tokenWidth = tokenMetrics.width;
-            tokenWidths.push(tokenWidth);
+            tokenWidths.push(tokenMetrics.width);
           }
 
-          // カーソル位置から左に向かって描画（右から左へ）
           let currentX = cursorX;
 
-          // トークンを逆順に処理（最新から古い順）
           for (let i = displayedTokenTimings.length - 1; i >= 0; i--) {
             const timing = displayedTokenTimings[i];
             const token = timing.token;
             const tokenWidth = tokenWidths[i];
             const isCurrentToken = timing.index === displayedCurrentIndex;
-            const font = isCurrentToken
-              ? "bold 20px system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
-              : "normal 20px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.font = font;
+            ctx.font = isCurrentToken
+              ? `bold ${textFontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+              : `normal ${textFontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
 
-            // 色を設定
             if (displayColor && timing.color !== undefined) {
               ctx.fillStyle = textDisplayColors[clamp_color(timing.color)];
             } else {
               ctx.fillStyle = "#333333";
             }
 
-            // 左端を超えないようにする
             if (currentX - tokenWidth < leftX + 10) {
-              // 左端を超える場合は、改行または描画を停止
-              // 改行する場合
               y += lineHeight;
               currentX = cursorX;
 
-              // 画面外に出たら終了（Human波形の上まで）
               if (y > humanCenterY - rowHeight / 2 - 10) {
                 break;
               }
             }
 
-            // トークンを右から左に向かって描画
             currentX -= tokenWidth;
             ctx.fillText(token, currentX, y);
           }
@@ -424,10 +430,10 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
 
       // カーソル（緑）
       ctx.strokeStyle = "#7FD9B3";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = Math.max(2, 3 * s);
       ctx.beginPath();
       ctx.moveTo(cursorX, topMargin - 10);
-      ctx.lineTo(cursorX, HEIGHT - bottomMargin + 10);
+      ctx.lineTo(cursorX, H - bottomMargin + 10);
       ctx.stroke();
     };
 
@@ -438,23 +444,19 @@ export const WaveformVisualizer: FC<WaveformVisualizerProps> = ({
 
   return (
     <div
+      ref={containerRef}
       style={{
         width: "100%",
         height: "100%",
         backgroundColor: "#FFFFFF",
         position: "relative",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        overflow: "hidden",
       }}
     >
       <canvas
         ref={canvasRef}
         style={{
-          width: "100%",
-          height: "100%",
           display: "block",
-          objectFit: "contain",
         }}
       />
     </div>
