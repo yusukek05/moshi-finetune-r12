@@ -49,3 +49,5 @@ hostfile_mpi_logs
 run_*.o[0-9]*
 model_init.log
 hostfile_mpi_*
+
+memo.md
