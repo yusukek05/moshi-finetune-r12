@@ -300,6 +300,12 @@ class MoshiForFinetuning(LMModel):
         # Load the kwargs
         with open(os.path.join(save_dir, "moshi_lm_kwargs.json")) as f:
             moshi_lm_kwargs = json.load(f)
+        # Drop kwargs that are not supported by the base Moshi model implementation.
+        # These keys may appear when reusing kwargs files prepared for Moshi-LLaMA integrations.
+        unsupported_keys = ("llama_name_or_path",)
+        for key in unsupported_keys:
+            if key in moshi_lm_kwargs:
+                moshi_lm_kwargs.pop(key)
         # Initialize the model
         moshi_lm = cls(device=device, dtype=dtype, **moshi_lm_kwargs).to(device=device, dtype=dtype)
         # Load the model

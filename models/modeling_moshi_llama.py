@@ -190,7 +190,9 @@ class MoshiLlama(LMModel):
         )
         # Depformer follow its own cycle of streaming entirely contained in one time step
         # and should not follow the streaming of the steps dimensions.
-        self.depformer.set_streaming_detached(True)
+        # Note: set_streaming_detached may not exist in newer versions of moshi
+        if hasattr(self.depformer, 'set_streaming_detached'):
+            self.depformer.set_streaming_detached(True)
         dim = depformer_dim  # we will directly apply the next linears to the output of the Depformer.
 
         self.linears = nn.ModuleList(

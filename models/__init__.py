@@ -1,4 +1,9 @@
-from models.moshi_for_finetuning import MoshiForFinetuning
+from models.modeling_moshi_llama import MoshiLlama
+from models.moshi_for_finetuning import (
+    MoshiForFinetuning,
+    MoshiLlamaForFinetuning,
+    AutoMoshiForFinetuning,
+)
 from models.llmjp3_for_finetuning import MoshiLLMJP3ForFinetuning
 from models.moshi_for_generation import MoshiForConditionalGeneration
 from models.utils import (
@@ -7,7 +12,10 @@ from models.utils import (
 )
 
 __all__ = [
+    "MoshiLlama",
     "MoshiForFinetuning",
+    "MoshiLlamaForFinetuning",
+    "AutoMoshiForFinetuning",
     "MoshiLLMJP3ForFinetuning",
     "MoshiForConditionalGeneration",
     "extend_moshi_modules_for_user_stream",

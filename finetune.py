@@ -261,6 +261,12 @@ def setup_argparser(parser: argparse.ArgumentParser):
         default=1.0,
         help="Weight for the acoustic loss in the audio loss.",
     )
+    parser.add_argument(
+        "--audio_loss_weight_when_text_pad",
+        type=float,
+        default=1.0,
+        help="Weight for audio loss when text token is PAD (alpha << 1).",
+    )
 
 
 def postprocess_args(args: argparse.Namespace):
@@ -411,6 +417,7 @@ def depformer_forward(
     batch: Batch,
     tempformer_out: torch.Tensor,
     model_user_stream: bool,
+    audio_loss_weight_when_text_pad: float = 1.0,
 ) -> dict[str, torch.Tensor]:
     # 1 Mapping tempformer's output to depformer's input
     depformer_inputs = []
@@ -473,6 +480,50 @@ def depformer_forward(
     assert audio_accuracy.shape == audio_labels.shape, (
         f"{audio_accuracy.shape} != {audio_labels.shape}"
     )
+
+    # Apply weight to audio loss when text token is PAD
+    # Consider delay alignment: audio codebooks may have different delays from text
+    # text_labels shape: [batch_size, num_frames] (shifted by 1)
+    text_labels = batch.labels[:, 0, 1:].contiguous()
+    text_is_pad = text_labels == moshi_lm.text_padding_token_id
+
+    # Get delays: delays[0] is text, delays[1:] are audio codebooks
+    text_delay = moshi_lm.delays[0]
+    if model_user_stream:
+        audio_delays = moshi_lm.delays[1:]  # All audio codebook delays
+    else:
+        audio_delays = moshi_lm.delays[1:9]  # Only moshi's audio codebook delays
+
+    batch_size, num_frames = text_is_pad.shape
+    num_audio_codebooks = len(audio_delays)
+
+    # Create delay-aligned PAD masks for each audio codebook
+    # Shape: [batch_size, num_frames, num_audio_codebooks]
+    text_is_pad_aligned = torch.zeros(
+        batch_size, num_frames, num_audio_codebooks,
+        dtype=torch.bool, device=text_is_pad.device
+    )
+
+    for cb_idx, audio_delay in enumerate(audio_delays):
+        relative_delay = audio_delay - text_delay
+        if relative_delay > 0:
+            # Audio is delayed relative to text: shift text_is_pad right
+            # Audio at position t corresponds to text at position t - relative_delay
+            text_is_pad_aligned[:, relative_delay:, cb_idx] = text_is_pad[:, :-relative_delay]
+        elif relative_delay < 0:
+            # Audio is ahead of text: shift text_is_pad left
+            text_is_pad_aligned[:, :relative_delay, cb_idx] = text_is_pad[:, -relative_delay:]
+        else:
+            # No delay difference
+            text_is_pad_aligned[:, :, cb_idx] = text_is_pad
+
+    # Apply weight: alpha for PAD frames, 1.0 for non-PAD frames
+    audio_loss_weights = torch.where(
+        text_is_pad_aligned,
+        torch.tensor(audio_loss_weight_when_text_pad, device=audio_losses.device),
+        torch.tensor(1.0, device=audio_losses.device),
+    )
+    audio_losses = audio_losses * audio_loss_weights
 
     result = {
         "semantic_losses": audio_losses[..., 0][audio_labels[..., 0] != moshi_lm.zero_token_id],
@@ -540,7 +591,9 @@ def forward(
     del temp_result
 
     # 2 Forward pass of Depth Transformer
-    dep_result = depformer_forward(moshi_lm, batch, tempformer_out, args.model_user_stream)
+    dep_result = depformer_forward(
+        moshi_lm, batch, tempformer_out, args.model_user_stream, args.audio_loss_weight_when_text_pad
+    )
     audio_weight = (
         dep_result["semantic_losses"].size(0) * args.semantic_loss_weight
         + dep_result["acoustic_losses"].size(0) * args.acoustic_loss_weight
