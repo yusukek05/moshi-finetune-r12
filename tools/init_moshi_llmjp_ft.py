@@ -83,7 +83,7 @@ def main(args):
             n_q *= 2
             dep_q *= 2
             delays += [args.semantic_delay]  # user semantic stream
-            delays += [args.acoustic_delay] * (n_q - 1)  # user acoustic streams
+            delays += [args.acoustic_delay] * (args.num_audio_codebooks - 1)  # user acoustic streams
         moshi_llama_kwargs.update(
             {
                 "n_q": n_q,

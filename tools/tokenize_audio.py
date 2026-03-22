@@ -8,7 +8,6 @@ import torchaudio
 from huggingface_hub import hf_hub_download
 from moshi.models import MimiModel, loaders
 from tqdm import tqdm
-from pathlib import Path
 
 
 def ceil(x, y):
@@ -34,9 +33,7 @@ def tokenize_audio(
         wav_chunk = wav[i * wav_chunk_size : (i + 1) * wav_chunk_size]
         with torch.no_grad():
             list_of_audio_ids.append(
-                mimi.encode(
-                    wav_chunk.reshape(1, 1, -1).to(device)
-                ).cpu()  # [B=1, K=8, T_chunk]
+                mimi.encode(wav_chunk.reshape(1, 1, -1).to(device)).cpu()  # [B=1, K=8, T_chunk]
             )
     audio_ids = torch.cat(list_of_audio_ids, dim=-1)  # [B=1, K=8, T]
     audio_ids = audio_ids[0]  # [K=8, T]
@@ -49,29 +46,20 @@ def tokenize_audio(
     return audio_ids
 
 
-def worker(process_id: int, wav_paths: list[Path], args: argparse.Namespace):
+def worker(process_id: int, dialogue_names: list[str], args: argparse.Namespace):
     device = torch.device("cuda", process_id)
     mimi = loaders.get_mimi(
         filename=hf_hub_download(args.audio_tokenizer_repo, args.audio_tokenizer_name),
         device=device,
     )
-    pbar = tqdm(wav_paths, desc=f"Worker {process_id}", dynamic_ncols=True)
+    pbar = tqdm(dialogue_names, desc=f"Worker {process_id}", dynamic_ncols=True)
 
-    in_root = Path(args.audio_dir).resolve()
-    out_root = Path(args.output_dir).resolve()
-
-    for wav_path in pbar:
-        rel_path = wav_path.relative_to(
-            in_root
-        )  # 例: 00000-of-01432/cuts.000000/foo.wav
-        dialogue_name = rel_path.with_suffix("").as_posix()  # 進捗表示用
+    for dialogue_name in pbar:
         pbar.set_postfix_str(dialogue_name)
 
         # load audio
-        wavs, sr = torchaudio.load(wav_path)
-        assert (
-            wavs.shape[0] == 2
-        ), f"Expected stereo audio, got {wavs.shape[0]} channels."
+        wavs, sr = torchaudio.load(os.path.join(args.audio_dir, f"{dialogue_name}.wav"))
+        assert wavs.shape[0] == 2, f"Expected stereo audio, got {wavs.shape[0]} channels."
         resampler = torchaudio.transforms.Resample(sr, mimi.sample_rate).to(device)
         wavs = resampler(wavs.to(device))
 
@@ -80,32 +68,29 @@ def worker(process_id: int, wav_paths: list[Path], args: argparse.Namespace):
         audio_ids_B = tokenize_audio(wavs[1], mimi, args.audio_chunk_size)
 
         # save tokenized audio
-        out_path = (out_root / rel_path).with_suffix(".npz")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path = os.path.join(args.output_dir, f"{dialogue_name}.npz")
         try:
-            np.savez_compressed(out_path, A=audio_ids_A.numpy(), B=audio_ids_B.numpy())
+            np.savez_compressed(output_path, A=audio_ids_A.numpy(), B=audio_ids_B.numpy())
         except Exception as e:
-            print(f"Failed to save {out_path}: {e}")
-            if out_path.exists():
-                out_path.unlink()
+            print(f"Failed to save {output_path}: {e}")
+            os.remove(output_path)
 
 
 def main(args):
-    in_root = Path(args.audio_dir).resolve()
-    wav_paths = list(in_root.rglob("*.wav"))
+    dialogue_names = [
+        os.path.splitext(d)[0] for d in os.listdir(args.audio_dir) if d.endswith(".wav")
+    ]
 
-    out_root = Path(args.output_dir).resolve()
+    os.makedirs(args.output_dir, exist_ok=True)
     if args.resume:
-        tokenized = {p.with_suffix(".npz") for p in out_root.rglob("*.npz")}
-        wav_paths = [
-            p
-            for p in wav_paths
-            if (out_root / p.relative_to(in_root)).with_suffix(".npz") not in tokenized
+        tokenized_dialogue_names = [
+            os.path.splitext(d)[0] for d in os.listdir(args.output_dir) if d.endswith(".npz")
         ]
-        print(f"Skipping {len(tokenized)} already tokenized dialogues.")
+        print(f"Skipping {len(tokenized_dialogue_names)} already tokenized dialogues.")
+        dialogue_names = list(set(dialogue_names) - set(tokenized_dialogue_names))
 
     if args.num_workers == 1:
-        worker(0, wav_paths, args)
+        worker(0, dialogue_names, args)
 
     else:
         num_devices = torch.cuda.device_count()
@@ -116,14 +101,14 @@ def main(args):
             args.num_workers = num_devices
             print(f"Using {args.num_workers} workers.")
 
-        chunks = np.array_split(np.array(wav_paths), args.num_workers)
+        dialogue_names_per_worker = np.array_split(dialogue_names, args.num_workers)
         print(
-            f"Each of {args.num_workers} workers processes {len(chunks[0])} dialogues."
+            f"Each of {args.num_workers} workers processes {len(dialogue_names_per_worker[0])} dialogues."
         )
 
         processes = []
-        for i, chunk in enumerate(chunks):
-            p = mp.Process(target=worker, args=(i, list(chunk), args))
+        for i, dialogue_names in enumerate(dialogue_names_per_worker):
+            p = mp.Process(target=worker, args=(i, dialogue_names, args))
             p.start()
             processes.append(p)
         for p in processes:
@@ -170,10 +155,7 @@ if __name__ == "__main__":
         help="Split audio into chunks of this size (seconds) to fit into cuda memory.",
     )
     parser.add_argument(
-        "--num_workers",
-        type=int,
-        default=1,
-        help="Number of workers for multiprocessing.",
+        "--num_workers", type=int, default=1, help="Number of workers for multiprocessing."
     )
     parser.add_argument("--resume", action="store_true", help="Resume tokenization.")
     args = parser.parse_args()
