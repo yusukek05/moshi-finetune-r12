@@ -288,7 +288,7 @@ def main():
             text_sampling_params=sampling_params,
             audio_sampling_params=sampling_params,
         )
-        gen_tokens = torch.cat([prompt_tokens, gen_tokens], dim=-1)
+        # gen_tokens = torch.cat([prompt_tokens, gen_tokens], dim=-1)
         gen_tokens = undelay_tokens(gen_tokens, moshi_lm.delays)
         gen_tokens = gen_tokens.cpu().numpy()
 
