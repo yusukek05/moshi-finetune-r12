@@ -58,9 +58,9 @@ mpirun \
       --launcher mpi \
       --use_deepspeed \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
-      --output_dir  output/moshi_p2_stage1_labo_reazon_pretrain \
+      --output_dir  output/moshi_stage1_reazon_pretrain \
       --train_data_files ${train_data} \
-      --model_dir   init_models/moshiko-both_streams-float32 \
+      --model_dir   init_models/moshiko-single_streams-float32 \
       --model_dtype float32 \
       --max_length 2048 \
       --min_length 128 \

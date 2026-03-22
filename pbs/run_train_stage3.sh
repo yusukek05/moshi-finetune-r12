@@ -1,10 +1,10 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q rt_HF
+#PBS -q R9920251000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=2:ncpus=8:ngpus=8
-#PBS -l walltime=120:00:00
-#PBS -N 0162_train_new_jchat_init_text_emb_llmjp-zoom1
+#PBS -l select=1:ncpus=8:ngpus=8
+#PBS -l walltime=100:00:00
+#PBS -N 0162_train_stage3
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,16 +33,18 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1
-NNODES=$(wc -l < hostfile_mpi_moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_$PBS_JOBID
+NNODES=$(wc -l < hostfile_mpi_$PBS_JOBID)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1
+cat hostfile_mpi_$PBS_JOBID
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
 train_data="processed_data/llmjp-zoom1/train-001-of-001.parquet"
+
+# train_data="processed_data/data_stage_3/*.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -54,25 +56,26 @@ mpirun \
   -x NCCL_DEBUG -x NCCL_ASYNC_ERROR_HANDLING -x NCCL_IB_HCA -x NCCL_IB_DISABLE \
   -x LD_LIBRARY_PATH -x PATH \
   uv run finetune.py \
+      --audio_loss_weight_when_text_pad 1.0 \
       --launcher mpi \
       --use_deepspeed \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
-      --output_dir  output/moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1 \
+      --output_dir  output/moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs_llmjp-zoom1_7epochs \
       --train_data_files ${train_data} \
-      --model_dir   output/moshi_init_text_emb_stage2_new_jchat/step_8853_fp32 \
-      --model_dtype float32 \
+      --model_dir   output/moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs/step_942_fp32 \
+      --model_dtype bfloat16 \
       --model_user_stream \
       --max_length 2048 \
       --min_length 128 \
-      --num_train_epochs 3 \
+      --num_train_epochs 7 \
       --per_device_train_batch_size 1 \
-      --gradient_accumulation_steps 1 \
+      --gradient_accumulation_steps 2 \
       --num_warmup_steps 0 \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1 \
-      --save_steps 80 \
-  > 0162_train_new_jchat_init_text_emb_llmjp-zoom1_$PBS_JOBID.log 2>&1
+      --project_name moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs_llmjp-zoom1_7epochs \
+      --save_steps 5000 \
+  > 0162_train_moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs_llmjp-zoom1_7epochs_$PBS_JOBID.log 2>&1

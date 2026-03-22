@@ -17,4 +17,5 @@ uv run -m moshi.server \
     --moshi-weight output/moshi_p1_stage2_jchat_dialog/step_1968_cleaned/model.safetensors \
     --host 0.0.0.0 \
     --port 8998 \
-    --tokenizer  data/tokenizer/spiece.model
+    --tokenizer  data/tokenizer/spiece.model \
+    --static /home/acg17145sv/experiments/0162_dialogue_model/moshi-finetune/client/dist

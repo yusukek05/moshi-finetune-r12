@@ -20,7 +20,16 @@ export CUDA_HOME=$(dirname $(dirname $(which nvcc)))
 export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
+model_dir="output/moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs_llmjp-zoom1_7epochs"
+
 uv run -m tools.zero_to_fp32 \
-    output/moshi_stage3_new_jchat_llmjp-zoom1/step_3978 \
-    output/moshi_stage3_new_jchat_llmjp-zoom1/step_3978_fp32 \
-    --moshi_lm_kwargs_path init_models/moshiko-both_streams-float32/moshi_lm_kwargs.json
+    $model_dir/step_9282 \
+    $model_dir/step_9282_fp32 \
+    --moshi_lm_kwargs_path init_models/moshiko-both_streams-init_text_emb-float32/moshi_lm_kwargs.json
+
+
+uv run -m tools.clean_moshi \
+    --moshi_ft_dir $model_dir/step_9282_fp32 \
+    --save_dir $model_dir/step_9282_cleaned \
+    --model_dtype bfloat16 \
+    --remove_modules_for_user_stream

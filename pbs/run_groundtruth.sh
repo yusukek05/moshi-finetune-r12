@@ -22,28 +22,21 @@ export NCCL_P2P_DISABLE=1
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=lo
 
-model_dir="output/moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs_llmjp-zoom1_7epochs/step_9282_fp32"
+output_dir="output/llmjp-zoom1_test_full"
+model_dir="output/moshi-finetuned_train_0719/step_8714_fp32"
 eval_data="processed_data/llmjp-zoom1/test-001-of-001.parquet"  
-
-my_model_dir="output/moshi-finetuned_init_text_emb_train_ohashi_data_stage_3_3epochs_llmjp-zoom1_7epochs/step_9282_fp32"
+# prompt_tokens="output/llmjp-zoom1_test_full/prompt_tokens"
 
 uv run accelerate launch \
     --num_machines 1 \
     --num_processes 4 \
-    generate.py \
-        --output_dir "${model_dir}/continuation_llmjp-zoom1_test" \
-        --model_dir "${my_model_dir}" \
+    groundtruth.py \
+        --output_dir "${output_dir}" \
         --eval_data_files "${eval_data}" \
+        --model_dir "${model_dir}" \
+        --save_ground_truth \
         --prompt_length 125 \
         --generation_length 250 \
         --example_length 375 \
         --temperature 0.8 \
-        --num_examples 50 \
-        --seed 42
-
-
-uv run -m tools.decode_tokens \
-    --tokens_dir "${model_dir}/continuation_llmjp-zoom1_test/generated_tokens" \
-    --output_dir "${model_dir}/continuation_llmjp-zoom1_test/generated_wavs"
-    # --text_tokenizer_repo rinna/japanese-gpt2-medium \
-    # --text_tokenizer_name spiece.model
+        --num_examples 50

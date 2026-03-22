@@ -17,7 +17,7 @@ uv sync --python 3.12
 export NO_TORCH_COMPILE=1
 
 uv run -m tools.clean_moshi \
-    --moshi_ft_dir output/moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1/step_3978_fp32 \
-    --save_dir output/moshi_init_text_emb_stage3_new_jchat_llmjp-zoom1/step_3978_cleaned \
-    --model_dtype float32 \
+    --moshi_ft_dir output/moshi-finetuned_init_text_emb_train_ohashi_llmjp-zoom1_and_VisualBank_7epochs_1node_exp_textpad0.1/step_12516_fp32 \
+    --save_dir output/moshi-finetuned_init_text_emb_train_ohashi_llmjp-zoom1_and_VisualBank_7epochs_1node_exp_textpad0.1/step_12516_cleaned \
+    --model_dtype bfloat16 \
     --remove_modules_for_user_stream

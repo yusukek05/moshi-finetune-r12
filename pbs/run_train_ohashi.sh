@@ -1,10 +1,10 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q R9920251000
+#PBS -q rt_HF
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=8:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train
+#PBS -N 0162_train_ohashi
 #PBS -j oe
 
 set -euxo pipefail
@@ -33,12 +33,12 @@ ulimit -l unlimited
 
 # ── MPI hostfile を動的生成 ────────────────────────────────────
 GPUS_PER_NODE=8
-uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_ohashi
-NNODES=$(wc -l < hostfile_mpi_ohashi)
+uniq "$PBS_NODEFILE" | awk -v s=$GPUS_PER_NODE '{print $0" slots="s}' > hostfile_mpi_ohashi_$PBS_JOBID
+NNODES=$(wc -l < hostfile_mpi_ohashi_$PBS_JOBID)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 
 echo "HOSTFILE:"
-cat hostfile_mpi_ohashi
+cat hostfile_mpi_ohashi_$PBS_JOBID
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
@@ -58,9 +58,9 @@ mpirun \
       --launcher mpi \
       --use_deepspeed \
       --deepspeed_config_file ds_configs/zero3-fp16-warmlr-act_ckpt.json \
-      --output_dir  output/moshi-finetuned_train_ohashi \
+      --output_dir  output/moshi-finetuned_init_text_emb_train_ohashi \
       --train_data_files ${train_data} \
-      --model_dir   init_models/moshiko-both_streams-float32 \
+      --model_dir   init_models/moshiko-both_streams-init_text_emb-float32 \
       --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
@@ -72,5 +72,5 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 1 \
       --report_to wandb \
-      --project_name moshi-finetuning-ohashi \
+      --project_name moshi-finetuning-init_text_emb-ohashi \
       --save_steps 1000

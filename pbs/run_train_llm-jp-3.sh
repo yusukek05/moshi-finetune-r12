@@ -4,7 +4,7 @@
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=2:ncpus=8:ngpus=8
 #PBS -l walltime=120:00:00
-#PBS -N 0162_train_llm-jp-3
+#PBS -N 0162_train_llmjp_instruct_user_ft
 #PBS -j oe
 
 set -euxo pipefail
@@ -21,6 +21,8 @@ module load python/3.12/3.12.9
 uv sync --python 3.12
 export VIRTUAL_ENV="$PWD/.venv"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+export NO_TORCH_COMPILE=1
 
 # ── NCCL / CUDA env ─────────────────────────────────────────────
 export NCCL_DEBUG=INFO
@@ -42,8 +44,7 @@ cat hostfile_mpi_llm-jp-3
 echo "WORLD_SIZE=${WORLD_SIZE}  ( ${GPUS_PER_NODE}x${NNODES} )"
 
 # ── トレーニングデータ ────────────────────────────────────────
-train_data="processed_data/CallHome/train-*.parquet \
-processed_data/CSJ/*.parquet"
+train_data="processed_data/J-CHAT/podcast_test_by_espnet_lower/podcast_test_by_espnet_lower-001-of-001.parquet"
 
 # ── mpirun ─────────────────────────────────────────────────────
 mpirun \
@@ -62,7 +63,7 @@ mpirun \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
       --output_dir  output/llm-jp-3-finetuned_train \
       --train_data_files ${train_data} \
-      --model_dir   init_models/llm-jp-3-both_streams-float32 \
+      --model_dir   init_models/moshi_llmjp_instruct_user_ft \
       --model_dtype float32 \
       --model_user_stream \
       --max_length 2048 \
@@ -74,5 +75,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name moshi-finetuning_llm-jp-3 \
-      --save_steps 80
+      --project_name moshi-finetuning_llmjp_instruct_user_ft \
+      --save_steps 80 \
+    > 0162_train_llm-jp-3_$PBS_JOBID.log 2>&1

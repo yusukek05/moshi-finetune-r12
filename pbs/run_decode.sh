@@ -16,8 +16,10 @@ uv sync --python 3.12
 
 export NO_TORCH_COMPILE=1
 
-model_dir="output/moshi_init_text_emb_stage2_new_jchat/step_8853_fp32"
+model_dir="output/moshi-finetuned_init_text_emb_train_ohashi_llmjp-zoom1_mix_visualbank_mix_alagin_7epochs_1node_exp/step_13041_fp32/continuation_CallHome_test"
 
 uv run -m tools.decode_tokens \
-    --tokens_dir "${model_dir}/continuation_tabidachi_test/generated_tokens" \
-    --output_dir "${model_dir}/continuation_tabidachi_test/generated_wavs" 
+    --tokens_dir "${model_dir}/generated_tokens" \
+    --output_dir "${model_dir}/generated_texts"
+    # --text_tokenizer_repo rinna/japanese-gpt2-medium \
+    # --text_tokenizer_name spiece.model
