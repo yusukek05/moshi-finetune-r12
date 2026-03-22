@@ -44,9 +44,13 @@ export const useServerAudio = ({setGetAudioStats}: useServerAudioArgs) => {
     maxDelay: 0,});
 
   const onDecode = useCallback(
-    async (data: Float32Array) => {
+    (data: Float32Array) => {
       receivedDuration.current += data.length / audioContext.current.sampleRate;
-      worklet.current.port.postMessage({frame: data, type: "audio", micDuration: micDuration.current});
+      // 転送リストでバッファを渡すとコピーが発生せずメインスレッド負荷が減る
+      worklet.current.port.postMessage(
+        { frame: data, type: "audio", micDuration: micDuration.current },
+        [data.buffer],
+      );
     },
     [],
   );
@@ -81,11 +85,7 @@ export const useServerAudio = ({setGetAudioStats}: useServerAudioArgs) => {
     [onDecode],
   );
 
-  let midx = 0;
   const decodeAudio = useCallback((data: Uint8Array) => {
-    if (midx < 5) {
-      console.log(Date.now() % 1000, "Got NETWORK message", micDuration.current - workletStats.current.actualAudioPlayed, midx++);
-    }
     decoderWorker.current.postMessage(
       {
         command: "decode",
@@ -114,12 +114,10 @@ export const useServerAudio = ({setGetAudioStats}: useServerAudioArgs) => {
       return;
     }
     worklet.current.port.postMessage({type: "reset"});
-    console.log(Date.now() % 1000, "Should start in a bit");
     startRecording();
     currentSocket.addEventListener("message", onSocketMessage);
     totalAudioMessages.current = 0;
     return () => {
-      console.log("Stop recording called in unknown function.")
       stopRecording();
       startTime.current = null;
       currentSocket.removeEventListener("message", onSocketMessage);
@@ -128,7 +126,6 @@ export const useServerAudio = ({setGetAudioStats}: useServerAudioArgs) => {
 
   useEffect(() => {
     if (setGetAudioStats) {
-      console.log("Setting getAudioStats");
       setGetAudioStats(getAudioStats);
     }
   }, [setGetAudioStats, getAudioStats]);
@@ -146,9 +143,7 @@ export const useServerAudio = ({setGetAudioStats}: useServerAudioArgs) => {
       resampleQuality: 0,
     });
 
-    return () => {
-      console.log("Terminating worker");
-    };
+    return () => {};
   }, [onWorkerMessage]);
 
   return {

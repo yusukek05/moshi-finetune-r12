@@ -293,9 +293,9 @@ export const Conversation: FC<ConversationProps> = ({
           actualAudioPlayed,
         }
       }>
-        <div>
-          <div className="main-grid h-screen max-h-screen w-screen p-4 max-w-96 md:max-w-screen-lg m-auto">
-            <div className="controls text-center flex justify-center items-center gap-2">
+        <div className="h-screen w-screen flex flex-col">
+          {/* コントロールバー（上部、最小限の高さ） */}
+          <div className="controls text-center flex justify-center items-center gap-2 p-2 flex-shrink-0">
               {isOver && !isBypass && (
                 <Button
                   onClick={() => {
@@ -334,66 +334,75 @@ export const Conversation: FC<ConversationProps> = ({
                 )
               }
               <div className={`h-4 w-4 rounded-full ${isConnected ? 'bg-green-700' : 'bg-red-700'}`} />
+          </div>
+          
+          {/* 波形ビジュアライザー（中央、最大化） */}
+          <div className="flex-1 w-full relative overflow-hidden bg-white"
+            style={{
+              backgroundImage: `url(${params.imageUrl})`,
+              backgroundSize: '70%',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center 10%',
+            }} >
+            {/* カスタム波形ビジュアライザー */}
+            <div className="w-full h-full flex items-center justify-center absolute inset-0 z-10">
+              <WaveformVisualizer
+                aiAnalyser={aiAnalyser}
+                humanAnalyser={humanAnalyser}
+                durationSec={Math.max(
+                  micDuration.current || 0,
+                  actualAudioPlayed.current || 0,
+                  currentTimeSec || 0,
+                  1
+                )}
+                currentTimeSec={currentTimeSec || 0}
+                displayColor={params.displayColor}
+              />
             </div>
-            <div className="relative player h-full max-h-full w-full justify-between gap-3 border-2 border-white md:p-12"
+            
+            {/* 既存のビジュアライザーは視覚的に非表示（analyser取得のためだけに使用） */}
+            <div className="absolute inset-0 opacity-0 pointer-events-none z-0">
+              <ServerAudio
+                imageUrl={params.imageUrl}
+                copyCanvasRef={canvasRef}
+                setGetAudioStats={(callback: () => AudioStats) =>
+                  (getAudioStats.current = callback)
+                }
+                onAnalyserChange={setAiAnalyser}
+              />
+              <UserAudio 
+                copyCanvasRef={canvasRef}
+                onAnalyserChange={setHumanAnalyser}
+              />
+            </div>
+            
+            {/* ダウンロードリンク（必要に応じて表示） */}
+            <div className="pt-8 text-sm flex justify-center items-center flex-col download-links absolute bottom-0 left-0 right-0 z-20"
               style={{
-                backgroundImage: `url(${params.imageUrl})`,
-                backgroundSize: '70%',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center 10%',
-              }} >
-              {/* カスタム波形ビジュアライザー */}
-              <div className="w-full h-full flex items-center justify-center absolute inset-0 z-10">
-                <WaveformVisualizer
-                  aiAnalyser={aiAnalyser}
-                  humanAnalyser={humanAnalyser}
-                  durationSec={Math.max(
-                    micDuration.current || 0,
-                    actualAudioPlayed.current || 0,
-                    currentTimeSec || 0,
-                    1
-                  )}
-                  currentTimeSec={currentTimeSec || 0}
-                  displayColor={params.displayColor}
-                />
-              </div>
-              {/* 既存のビジュアライザーは視覚的に非表示（analyser取得のためだけに使用） */}
-              <div className="absolute inset-0 opacity-0 pointer-events-none z-0">
-                <ServerAudio
-                  imageUrl={params.imageUrl}
-                  copyCanvasRef={canvasRef}
-                  setGetAudioStats={(callback: () => AudioStats) =>
-                    (getAudioStats.current = callback)
-                  }
-                  onAnalyserChange={setAiAnalyser}
-                />
-                <UserAudio 
-                  copyCanvasRef={canvasRef}
-                  onAnalyserChange={setHumanAnalyser}
-                />
-              </div>
-              <div className="pt-8 text-sm flex justify-center items-center flex-col download-links absolute bottom-0 left-0 right-0"
-                style={{
-                  minHeight: 80,
-                  margin: -10,
-                  padding: 0,
-                }}>
-                {audioURL && <div><a href={audioURL} download={`moshi audio.${getExtension("audio")}`} className="pt-2 text-center block">Download audio</a></div>}
-                {videoURL && <div><a href={videoURL} download={`moshi video.${getExtension("video")}`} className="pt-2 text-center">Download video</a></div>}
-                {videoURL && getExtension("video") === "webm" && <div><a href="https://restream.io/tools/webm-to-mp4-converter" target="_blank" rel="noreferrer" className="explain-links pt-2 text-center italic block">How to convert to mp4</a></div>}
-              </div>
+                minHeight: 80,
+                margin: -10,
+                padding: 0,
+              }}>
+              {audioURL && <div><a href={audioURL} download={`moshi audio.${getExtension("audio")}`} className="pt-2 text-center block">Download audio</a></div>}
+              {videoURL && <div><a href={videoURL} download={`moshi video.${getExtension("video")}`} className="pt-2 text-center">Download video</a></div>}
+              {videoURL && getExtension("video") === "webm" && <div><a href="https://restream.io/tools/webm-to-mp4-converter" target="_blank" rel="noreferrer" className="explain-links pt-2 text-center italic block">How to convert to mp4</a></div>}
             </div>
+          </div>
+          
+          {/* 下部エリア（最小限の高さ） */}
+          <div className="flex-shrink-0 p-2 text-center">
             {/* テキスト表示は波形ビジュアライザー内に統合されたため非表示 */}
             <div className="hidden scrollbar player-text border-2 border-white " ref={textContainerRef}>
               <TextDisplay containerRef={textContainerRef} displayColor={params.displayColor} />
             </div>
-            <div className="player-stats hidden md:block">
+            {/* 統計情報は非表示（必要に応じて表示可能） */}
+            <div className="hidden player-stats">
               <ServerAudioStats getAudioStats={getAudioStats} />
             </div>
-          </div>
-          <div className="max-w-96 md:max-w-screen-lg p-4 m-auto text-center">
-            <ServerInfo />
-            {!workerAuthId && <ModelParams {...modelParams} isConnected={isConnected} isImageMode={params.imageUrl != undefined} />}
+            <div className="max-w-screen-lg m-auto">
+              <ServerInfo />
+              {!workerAuthId && <ModelParams {...modelParams} isConnected={isConnected} isImageMode={params.imageUrl != undefined} />}
+            </div>
           </div>
           <canvas height={380} width={380} className="hidden" ref={canvasRef} />
           <img src={canvasLogo} ref={logoRef} className="hidden" onLoad={() => {
