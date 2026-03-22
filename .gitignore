@@ -41,3 +41,11 @@ job_logs3/
 job_logs4/
 job_logs_for_llm-jp-3
 hostfile_mpi_logs
+
+# PBS/MPI job logs
+*.pbs1.log
+*.pbs1
+0162_train_stage3.o*
+run_*.o[0-9]*
+model_init.log
+hostfile_mpi_*
