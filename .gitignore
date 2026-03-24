@@ -45,7 +45,7 @@ hostfile_mpi_logs
 # PBS/MPI job logs
 *.pbs1.log
 *.pbs1
-0162_train_stage3.o*
+0162_*.o*
 run_*.o[0-9]*
 model_init.log
 hostfile_mpi_*
