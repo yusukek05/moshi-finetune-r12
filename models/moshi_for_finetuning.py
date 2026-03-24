@@ -309,7 +309,18 @@ class MoshiForFinetuning(LMModel):
         # Initialize the model
         moshi_lm = cls(device=device, dtype=dtype, **moshi_lm_kwargs).to(device=device, dtype=dtype)
         # Load the model
-        load_model(moshi_lm, os.path.join(save_dir, "model.safetensors"))
+        # Handle _orig_mod. prefix (from torch.compile checkpoints)
+        model_path = os.path.join(save_dir, "model.safetensors")
+        try:
+            load_model(moshi_lm, model_path)
+        except RuntimeError as e:
+            if "_orig_mod." in str(e):
+                from safetensors.torch import load_file
+                state_dict = load_file(model_path)
+                state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+                moshi_lm.load_state_dict(state_dict)
+            else:
+                raise
 
         moshi_lm.moshi_lm_kwargs = moshi_lm_kwargs
 
