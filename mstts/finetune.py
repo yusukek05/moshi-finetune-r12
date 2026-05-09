@@ -271,8 +271,7 @@ def postprocess_args(args: argparse.Namespace):
         assert isinstance(args.eval_steps, int), \
             "eval_steps is required when eval_data_files is set."
 
-    if args.report_to is not None:
-        args.with_tracking = True
+    args.with_tracking = args.report_to is not None
 
     if args.resume_from_checkpoint:
         assert os.path.exists(args.resume_from_checkpoint), \
