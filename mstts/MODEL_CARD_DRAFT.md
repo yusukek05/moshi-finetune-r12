@@ -215,7 +215,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 一括クイックスタート（HF からダウンロード → 推論）
 
 ```bash
-uvx --from huggingface_hub huggingface-cli download \
+uvx --from huggingface_hub hf download \
     abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 \
     --local-dir mstts-v0c
 cd mstts-v0c
