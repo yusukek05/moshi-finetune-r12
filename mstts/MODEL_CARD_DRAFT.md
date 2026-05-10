@@ -88,13 +88,13 @@ pipeline_tag: text-to-speech
 - **データ**: J-CHAT (multi-stream parquet)
 - **規模**: 17,892 step、effective batch 512、tlr=3e-5 / dlr=1e-4
 
-### Stage 3 — Zoom1 fine-tune (v0b, 阿部祐也)
+### Stage 3 — Zoom1 fine-tune (v0b, 阿部雄斗)
 - **ベース**: Stage 2
 - **データ**: LLM-JP Zoom1 対話データ（1,723 dialogues / 42,396 examples after split）
 - **規模**: 500 step、effective batch 32、tlr=1e-5 / dlr=3e-5、warmup 50
 - **最終 Loss**: 3.92（text 2.40、audio 1.52）
 
-### Stage 4 — extended Zoom1 fine-tune (this model, v0c, 阿部祐也)
+### Stage 4 — extended Zoom1 fine-tune (this model, v0c, 阿部雄斗)
 - **ベース**: Stage 3
 - **データ**: 同 Zoom1
 - **規模**: 1,500 step、effective batch 32、tlr=1e-5 / dlr=3e-5、warmup 50
@@ -322,7 +322,7 @@ python -m tools.decode_tokens \
 ## Contact
 
 - **Issues / questions**: [github.com/abePclWaseda/moshi-finetune/issues](https://github.com/abePclWaseda/moshi-finetune/issues)
-- **Email**: yuto27abe@gmail.com
+- **Email**: abe@pcl.cs.waseda.ac.jp
 - **Misuse / abuse の通報**: 同上
 
 ---
