@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>llm-jp-moshi-mstts — Japanese multi-stream dialogue TTS</title>
+<meta name="description" content="日本語の対話テキストから2話者音声を生成するマルチストリーム TTS モデルの紹介ページ。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+
+<header class="hero">
+  <h1>llm-jp-moshi-mstts</h1>
+  <p class="tagline">日本語の対話テキストから 2話者の同時発話音声を生成する <strong>マルチストリーム TTS</strong>。Moshi/Moshika アーキテクチャを 4 段階のカリキュラム学習で日本語対話に適応させたモデル。</p>
+  <p class="tagline" style="font-size:0.9rem;"><em>A Japanese multi-stream text-to-speech model that synthesises 24 kHz stereo dialogue audio (left = speaker A, right = speaker B) from a turn-tagged text dialogue.</em></p>
+  <div class="badges">
+    <span class="badge">v0c-zoom1</span>
+    <span class="badge">Japanese</span>
+    <span class="badge">2 speakers</span>
+    <span class="badge">24 kHz stereo</span>
+    <span class="badge">Moshika base</span>
+    <span class="badge">~7 B params</span>
+    <span class="badge danger">CC-BY-NC 4.0 · Non-commercial only</span>
+    <span class="badge danger">Private model · sample preview</span>
+  </div>
+</header>
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p>入力は <code>[["A", "..."], ["B", "..."], ...]</code> 形式の対話テキスト JSON。出力は 24 kHz・ステレオの WAV で、左チャンネルが話者 A、右チャンネルが話者 B の音声。Kyutai 社の <a href="https://huggingface.co/kyutai/moshika-pytorch-bf16">Moshika</a> をベースに、日本語の音声・テキスト分布を 4 段階で学習させて構築した。</p>
+  <table>
+    <tr><th>Architecture</th><td>Moshi LM (1 text + 8×2 audio codebooks = 17 channels)</td></tr>
+    <tr><th>Audio codec</th><td>Kyutai Mimi (24 kHz, 12.5 frame/s)</td></tr>
+    <tr><th>Text tokenizer</th><td>rinna/japanese-gpt2-medium spiece (32 k vocab)</td></tr>
+    <tr><th>Parameters</th><td>≈ 7 B</td></tr>
+    <tr><th>Language</th><td>日本語のみ / Japanese only</td></tr>
+    <tr><th>Speakers</th><td>2 名固定（A / B）</td></tr>
+  </table>
+</section>
+
+<section id="curriculum">
+  <h2>Training Curriculum</h2>
+  <p>Stage 1 と Stage 2 は名古屋大学 大橋厚元さんが学習した checkpoint をベースとして再利用（許諾済）。Stage 3 と 4 で本プロジェクトの Zoom1 対話への適応を行った。</p>
+  <ol class="curriculum-stages">
+    <li>
+      <p class="stage-title">mono pretraining <em>— by Atsumoto Ohashi</em></p>
+      <p class="stage-meta">moshika → J-CHAT-mono + ReazonSpeech + LaboroTV (6,000 step, eff. batch 512)</p>
+    </li>
+    <li>
+      <p class="stage-title">multi-stream TTS pretraining <em>— by Atsumoto Ohashi</em></p>
+      <p class="stage-meta">stage 1 → J-CHAT (multi-stream) (17,892 step, eff. batch 512)</p>
+    </li>
+    <li>
+      <p class="stage-title">Zoom1 fine-tune (v0b)</p>
+      <p class="stage-meta">stage 2 → Zoom1 (500 step, eff. batch 32) — final loss 3.92</p>
+    </li>
+    <li>
+      <p class="stage-title">extended Zoom1 fine-tune (v0c, this model)</p>
+      <p class="stage-meta">v0b → Zoom1 (+1,500 step) — final loss <strong>3.04</strong> (text 2.02, audio 1.02)</p>
+    </li>
+  </ol>
+</section>
+
+<section id="samples">
+  <h2>Listen — 学習段階による品質変化</h2>
+  <p>同じ入力テキストを 4 段階の checkpoint それぞれに通した結果。ノイズ → 自然な対話音声へと改善していく様子が聞き取れる。</p>
+
+  <h3>Sample 1 — 朝の挨拶と昼食の話題</h3>
+  <div class="dialog-box">
+    <div class="turn"><span class="speaker">A:</span><span>おはようございます。今日は天気が良さそうですね。</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>ええ、雲一つないいい天気だよ。</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>これじゃ、昼くらいから暑くなりそうですね。</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>ああ、そうなるよね。ランチはさっぱりしたの食べたくなりそう。</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>冷やし中華なんてどう？</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>いいね。よかったら一緒に食べに行かない？</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>ぜひ行きましょう。</span></div>
+  </div>
+  <div class="audio-grid">
+    <div class="audio-card">
+      <h4>v0a (moshiko 直 + 500 step)</h4>
+      <div class="meta">Loss 6.55 — 対照群: 日本語事前学習なしだとノイズ</div>
+      <audio controls preload="none" src="audio/v0a-001.wav"></audio>
+    </div>
+    <div class="audio-card">
+      <h4>0178 base (Stage 2 終了)</h4>
+      <div class="meta">大橋さん作の mstts checkpoint (step 17,892)</div>
+      <audio controls preload="none" src="audio/0178-001.wav"></audio>
+    </div>
+    <div class="audio-card">
+      <h4>v0b (+ Zoom1 500 step)</h4>
+      <div class="meta">Loss 3.92 — Zoom 風の対話に寄せ始め</div>
+      <audio controls preload="none" src="audio/v0b-001.wav"></audio>
+    </div>
+    <div class="audio-card">
+      <h4>v0c (+ Zoom1 1500 step) ★</h4>
+      <div class="meta">Loss 3.04 — 本モデル（最新）</div>
+      <audio controls preload="none" src="audio/v0c-001.wav"></audio>
+    </div>
+  </div>
+
+  <h3>Sample 2 — 昼食の相談</h3>
+  <div class="dialog-box">
+    <div class="turn"><span class="speaker">A:</span><span>お昼休憩だね。今日何食べようかな</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>うーん、ステーキが食べたい気分</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>そうなんですか</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>そうです、加藤さんは何が食べたいの</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>私はハンバーグがいいな</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>そうなのか。じゃ、ステーキとハンバーグ両方ある店探す？</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>いいね。この先にガストがあるから、ガスト行こうか</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>あ、そういえばガストの割引クーポン持ってる</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>へえ、どんなの</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>ドリンクバーが安くなるんだ</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>じゃ、ドリンクバーもつけちゃおう</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>そうだね、ガスト行こ</span></div>
+  </div>
+  <div class="audio-grid">
+    <div class="audio-card">
+      <h4>v0a</h4>
+      <audio controls preload="none" src="audio/v0a-002.wav"></audio>
+    </div>
+    <div class="audio-card">
+      <h4>0178 base</h4>
+      <audio controls preload="none" src="audio/0178-002.wav"></audio>
+    </div>
+    <div class="audio-card">
+      <h4>v0b</h4>
+      <audio controls preload="none" src="audio/v0b-002.wav"></audio>
+    </div>
+    <div class="audio-card">
+      <h4>v0c ★</h4>
+      <audio controls preload="none" src="audio/v0c-002.wav"></audio>
+    </div>
+  </div>
+</section>
+
+<section id="generalisation">
+  <h2>Generalisation — 学習データ外の対話</h2>
+  <p>Zoom1 学習データには含まれない「<strong>趣味の名前を思い出せない側を、もう一方が助ける</strong>」というシナリオで生成テスト。テキストは下記の通り、人手で書き下ろしたもの。</p>
+  <div class="dialog-box">
+    <div class="turn"><span class="speaker">A:</span><span>最近、何か趣味始めたって言ってなかったっけ？</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>あ、うん、始めたんだよ。えっと、なんだったかな…</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>こう、双眼鏡を持って、朝早く公園に行って…</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>鳥を見るやつ？</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>そうそう、鳥を見るやつ！何て言うんだっけ？</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>バードウォッチング？</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>そう、バードウォッチング！それそれ、名前が出てこなくて困ってたんだよ。</span></div>
+    <div class="turn"><span class="speaker">A:</span><span>朝早い方がいろんな鳥が見られるんだよね。</span></div>
+    <div class="turn"><span class="speaker">B:</span><span>そうなんだよ、だから最近は早起きしてるよ。</span></div>
+  </div>
+  <div class="audio-grid">
+    <div class="audio-card">
+      <h4>v0c による生成</h4>
+      <div class="meta">28 秒 / temp text 0.55, audio 0.6, seed 1</div>
+      <audio controls preload="none" src="audio/v0c-hobby-birdwatching.wav"></audio>
+    </div>
+  </div>
+</section>
+
+<section id="loss">
+  <h2>Loss progression</h2>
+  <table>
+    <tr><th>段階</th><th>Step</th><th>Total Loss</th><th>text</th><th>audio</th></tr>
+    <tr><td>v0a (control)</td><td>500</td><td>6.55</td><td>3.29</td><td>3.25</td></tr>
+    <tr><td>0178 Stage 2 終了時</td><td>17,892</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>v0b</td><td>500</td><td>3.92</td><td>2.40</td><td>1.52</td></tr>
+    <tr><td><strong>v0c (this)</strong></td><td>1,500</td><td><strong>3.04</strong></td><td><strong>2.02</strong></td><td><strong>1.02</strong></td></tr>
+  </table>
+</section>
+
+<section id="limitations">
+  <h2>Limitations / 既知の制約</h2>
+  <ul>
+    <li>日本語のみ対応。英語等は無意味な音声になる。</li>
+    <li>2 話者（A / B）固定。声色は学習データから自動決定され、明示的な制御不可。</li>
+    <li>Zoom 形式の対話に強く適応しているため、独白・物語・ナレーションは弱い。</li>
+    <li>生成長は推論時の <code>max_generation_length</code> 上限内（≈ 1 分）でのみ安定動作確認済。</li>
+    <li>感情パラメータ・スタイル制御は未実装。</li>
+    <li>固有名詞・専門用語のアクセントが不自然になることがある。</li>
+    <li>推論には prompt audio (.npy) が必須で、その音声特性が出力声質に影響する。</li>
+  </ul>
+</section>
+
+<section id="ethics">
+  <h2>Ethics & responsible use</h2>
+  <div class="callout warning">
+    <strong>Out-of-scope use:</strong> 本モデルは以下の用途に使用しないでください。
+    <ul style="margin: 8px 0 0;">
+      <li>特定の実在人物の声を再現する目的 (voice cloning, impersonation)</li>
+      <li>本人同意のないなりすまし音声の生成（詐欺・フェイクニュース・嫌がらせ）</li>
+      <li>商用利用全般（CC-BY-NC 4.0 で禁止）</li>
+      <li>政治的なミスインフォメーション・選挙妨害</li>
+      <li>その他、法令・公序良俗に反する用途</li>
+    </ul>
+  </div>
+  <p>生成音声を公開する場合は <strong>合成音声であることを明示</strong> し、可能であれば <a href="https://github.com/facebookresearch/audioseal">AudioSeal</a> 等の音声透かしを併用することを推奨します。</p>
+</section>
+
+<section id="license">
+  <h2>License & Attribution</h2>
+  <p>本モデルは <strong>CC-BY-NC 4.0</strong> ライセンス（<a href="https://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0</a>）で配布されます。Kyutai <a href="https://huggingface.co/kyutai/moshika-pytorch-bf16">Moshika</a> から継承された制約により、商用利用はできません。</p>
+  <table>
+    <tr><th>役割</th><th>担当</th></tr>
+    <tr><td>Base model & audio codec</td><td>Kyutai (Moshika, Mimi)</td></tr>
+    <tr><td>Text tokenizer</td><td>rinna (japanese-gpt2-medium)</td></tr>
+    <tr><td>Stage 1 / 2 学習コード・checkpoint</td><td>大橋厚元 / 名古屋大学 対話研究グループ</td></tr>
+    <tr><td>Stage 3 / 4・統合・本ページ</td><td>阿部祐也 / 早稲田大学</td></tr>
+    <tr><td>学習データ提供</td><td>sarulab-speech (J-CHAT), Reazon Holdings (ReazonSpeech), Laboro.AI (LaboroTV), LLM-JP (Zoom1)</td></tr>
+  </table>
+</section>
+
+<section id="cite">
+  <h2>Citation</h2>
+<pre>@misc{abe2026llm-jp-moshi-mstts-v0c-zoom1,
+  author       = {Abe, Yuto and Ohashi, Atsumoto},
+  title        = {llm-jp-moshi-mstts-v0c-zoom1: A Japanese multi-stream dialogue TTS model},
+  year         = {2026},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1}}
+}
+
+@article{ohashi2025towards,
+  title   = {Towards a Japanese Full-duplex Spoken Dialogue System},
+  author  = {Ohashi, Atsumoto and Iizuka, Shinya and Jiang, Jingjing and Higashinaka, Ryuichiro},
+  journal = {arXiv preprint arXiv:2506.02979},
+  year    = {2025}
+}</pre>
+</section>
+
+<footer>
+  <p>Project page generated 2026-05-10. Model and code repositories are currently <strong>private</strong>; please contact <a href="mailto:yuto27abe@gmail.com">yuto27abe@gmail.com</a> for access requests or research collaboration.</p>
+</footer>
+
+</div>
+</body>
+</html>
