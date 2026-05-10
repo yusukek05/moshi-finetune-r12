@@ -1,18 +1,20 @@
 """Self-contained inference for llm-jp-moshi-mstts-v0c-zoom1.
 
-After downloading this repository (`huggingface-cli download
-abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 --local-dir mstts-v0c`), `cd`
-into the local directory and run:
+After downloading this repository (`uvx --from huggingface_hub
+huggingface-cli download abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1
+--local-dir mstts-v0c`), `cd` into the local directory and run:
 
-    python inference.py \\
+    uv sync
+    uv run python inference.py \\
         --text-chat sample_dialogue.json \\
         --output-wav out.wav
 
 A 24 kHz stereo wav (left = speaker A, right = speaker B) is written to
 `out.wav`.
 
-Required dependencies:
-    pip install moshi==0.1.0 sentencepiece soundfile sphn huggingface_hub torch numpy
+The repo's pyproject.toml pins all required dependencies (moshi==0.1.0,
+sentencepiece, soundfile, sphn, huggingface_hub, torch, transformers, …)
+so `uv sync` is enough.
 """
 from __future__ import annotations
 

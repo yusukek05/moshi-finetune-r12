@@ -25,19 +25,29 @@ pipeline_tag: text-to-speech
 
 ## Quick start
 
+事前準備として [`uv`](https://docs.astral.sh/uv/) をインストール (`curl -LsSf https://astral.sh/uv/install.sh | sh`)。
+
 ```bash
 # 1. Download this repository (model weights + inference scripts)
-huggingface-cli download abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 \
+uvx --from huggingface_hub huggingface-cli download \
+    abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 \
     --local-dir mstts-v0c
 cd mstts-v0c
 
-# 2. Install runtime dependencies
-pip install moshi==0.1.0 sentencepiece soundfile sphn huggingface_hub torch numpy
+# 2. Resolve & install dependencies (driven by pyproject.toml in this repo)
+uv sync
 
 # 3. Run inference on the bundled sample dialogue
-python inference.py --text-chat sample_dialogue.json --output-wav out.wav
+uv run python inference.py --text-chat sample_dialogue.json --output-wav out.wav
 # → Writes a ~30 s stereo wav (left = speaker A, right = speaker B).
 ```
+
+> 一度きりで試すだけなら `uv sync` の代わりに依存を直接渡しても OK:
+> ```bash
+> uv run --with moshi==0.1.0 --with sentencepiece --with soundfile --with sphn \
+>        --with huggingface_hub --with torch --with transformers \
+>        python inference.py --text-chat sample_dialogue.json --output-wav out.wav
+> ```
 
 CLI options:
 
@@ -70,6 +80,7 @@ Custom dialogue example:
 | `model.safetensors` (33 GB) | fp32 weights of the 7 B Moshi LM |
 | `moshi_lm_kwargs.json` | architecture configuration |
 | `inference.py` | self-contained CLI inference script |
+| `pyproject.toml` | dependency manifest for `uv sync` |
 | `prompt_streams_default.npy` | default audio prompt (17 ch × 60 frames) |
 | `sample_dialogue.json` | sample input (greeting + lunch chat) |
 | `sample_dialogue_hobby.json` | sample input (hobby recall scenario) |

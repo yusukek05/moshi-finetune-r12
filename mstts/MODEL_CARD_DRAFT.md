@@ -206,37 +206,24 @@ pipeline_tag: text-to-speech
 
 ## How to Use / 推論クイックスタート
 
-### Requirements
+事前準備として [`uv`](https://docs.astral.sh/uv/) をインストール:
 
 ```bash
-pip install moshi==0.1.0 torch torchaudio sphn safetensors sentencepiece soundfile
-# + tools/decode_tokens.py のためにこちらも：
-pip install huggingface_hub deepspeed accelerate
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Step 1: テキスト対話 → トークン
+### 一括クイックスタート（HF からダウンロード → 推論）
 
 ```bash
-python run_ms_tts.py \
-  --launcher accelerate \
-  --model_dir <path-to-this-repo> \
-  --model_dtype bfloat16 \
-  --text_chat_data_dir <input-dir> \
-  --text_tokenizer_repo rinna/japanese-gpt2-medium \
-  --text_tokenizer_name spiece.model \
-  --prompt_streams_path <prompt.npy> \
-  --max_generation_length 750 \
-  --use_sampling --text_temperature 0.55 --audio_temperature 0.6 \
-  --output_dir <out-dir>
+uvx --from huggingface_hub huggingface-cli download \
+    abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 \
+    --local-dir mstts-v0c
+cd mstts-v0c
+uv sync
+uv run python inference.py --text-chat sample_dialogue.json --output-wav out.wav
 ```
 
-### Step 2: トークン → wav
-
-```bash
-python -m tools.decode_tokens \
-  --tokens_dir <out-dir>/generated_tokens \
-  --output_dir <out-dir>/decoded_audio
-```
+`inference.py` が tokenize → token 生成 → Mimi decode → wav 書き出しを 1 コマンドで行います。pyproject.toml が同梱されているので、`uv sync` だけで必要な依存（`moshi==0.1.0`, `sentencepiece`, `soundfile`, `sphn`, `torch`, `transformers`, `huggingface_hub` 等）が解決されます。
 
 ### Input Format
 
