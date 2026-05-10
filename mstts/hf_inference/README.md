@@ -29,7 +29,7 @@ pipeline_tag: text-to-speech
 
 ```bash
 # 1. Download this repository (model weights + inference scripts)
-uvx --from huggingface_hub huggingface-cli download \
+uvx --from huggingface_hub hf download \
     abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 \
     --local-dir mstts-v0c
 cd mstts-v0c

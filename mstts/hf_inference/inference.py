@@ -1,8 +1,8 @@
 """Self-contained inference for llm-jp-moshi-mstts-v0c-zoom1.
 
-After downloading this repository (`uvx --from huggingface_hub
-huggingface-cli download abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1
---local-dir mstts-v0c`), `cd` into the local directory and run:
+After downloading this repository (`uvx --from huggingface_hub hf
+download abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 --local-dir
+mstts-v0c`), `cd` into the local directory and run:
 
     uv sync
     uv run python inference.py \\

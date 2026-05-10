@@ -24,13 +24,13 @@ set -a
 source "$PBS_O_WORKDIR/.env"
 set +a
 
-# Fresh staging dir to fully simulate a downstream user's experience.
-SMOKE_DIR=/tmp/v0c_e2e_smoke_$PBS_JOBID
+# Fresh staging dir on a filesystem with enough space (33 GB model).
+SMOKE_DIR="$PBS_O_WORKDIR/output/v0c_e2e_smoke_$PBS_JOBID/staging"
 mkdir -p "$SMOKE_DIR"
 cd "$SMOKE_DIR"
 
-# 1. Download the model repository (weights + inference scripts) via uv-managed huggingface-cli.
-uvx --from huggingface_hub huggingface-cli download \
+# 1. Download the model repository (weights + inference scripts) via uv-managed huggingface_hub `hf` CLI.
+uvx --from huggingface_hub hf download \
     abePclWaseda/llm-jp-moshi-mstts-v0c-zoom1 \
     --local-dir mstts-v0c
 
@@ -52,8 +52,7 @@ a, sr = sf.read('out.wav')
 print(f'OK: shape={a.shape} sr={sr} dur={a.shape[0]/sr:.2f}s rms={np.sqrt((a**2).mean()):.4f}')
 "
 
-# Save the wav back to a discoverable location.
+# Save the wav next to the staging dir (parent already exists from above).
 DEST="$PBS_O_WORKDIR/output/v0c_e2e_smoke_$PBS_JOBID"
-mkdir -p "$DEST"
 cp out.wav "$DEST/out.wav"
 echo "wav saved to $DEST/out.wav"
