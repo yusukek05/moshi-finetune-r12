@@ -36,6 +36,12 @@ def decode_audio(audio_tokens: np.ndarray, mimi: loaders.MimiModel) -> np.ndarra
     Returns:
         np.ndarray: Decoded audio. Shape: (C=2, wav_len).
             C: Number of audio channels, wav_len: Length of the audio waveform.
+
+    Channel mapping convention: with default inference
+    (`main_speaker_first=False`) and a text_chat starting at speaker A,
+    mstts places A's audio at rows K/2..K (the "other" position) and B's
+    at rows 0..K/2 (the "main" position). We reorder so output channel 0
+    (LEFT) = first speaker (A), matching the project-wide L=A, R=B convention.
     """
     K, T = audio_tokens.shape
     assert K // 2 == mimi.num_codebooks, (
@@ -43,13 +49,14 @@ def decode_audio(audio_tokens: np.ndarray, mimi: loaders.MimiModel) -> np.ndarra
     )
 
     device = next(mimi.parameters()).device
-    # split the audio tokens to 2 channels
-    tokens = np.stack(np.split(audio_tokens, 2, axis=0), axis=0)  # (2, K/2, T)
+    main_part, other_part = np.split(audio_tokens, 2, axis=0)
+    # other (= A, first speaker) → channel 0 ; main (= B) → channel 1
+    tokens = np.stack([other_part, main_part], axis=0)  # (2, K/2, T)
     with torch.no_grad():
         # use batch dimension of mimi as channel dimension
         wavs = mimi.decode(torch.from_numpy(tokens).to(device=device)).cpu().numpy()
         # wavs: (2, 1, wav_len)
-    wav = wavs.squeeze(1)  # (2, wav_len)
+    wav = wavs.squeeze(1)  # (2, wav_len) — channel 0 = A, channel 1 = B
     return wav
 
 

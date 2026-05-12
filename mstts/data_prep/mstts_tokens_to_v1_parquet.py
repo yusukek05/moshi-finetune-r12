@@ -34,13 +34,13 @@ text_chat starting at ["A", "..."]:
   • Turn 1 (B) receives `main_speaker_bos_id=1`  ⇒ mstts treats B as "main"
   • Audio rows 1-8 (main position) carry **B's** audio
   • Audio rows 9-16 (other position) carry **A's** audio
-  • After Mimi decode wavs[0]=rows 1-8 → LEFT channel ⇒ LEFT = B, RIGHT = A
 
-(This contradicts a casual "L=A, R=B" claim that appears elsewhere in the
-docs; the empirical signal — early audio-token diversity at the row where
-the first speaker is active — confirmed L = B.)
+This script operates on the raw 17-channel tokens, so it is independent
+of any wav channel reordering done by `decode_audio` / `decode_audio_with_mimi`.
+(Those functions swap output channels so wav files have L=A, R=B per the
+project convention; the tokens themselves still follow rows 1-8 = main.)
 
-Defaults below match this convention. Override with --audio-main-label A
+Defaults below match the token convention. Override with --audio-main-label A
 and --main-speaker-first if your inference call differed.
 
 Usage:

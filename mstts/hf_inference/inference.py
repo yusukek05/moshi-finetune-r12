@@ -40,17 +40,25 @@ from models import AutoMoshiForFinetuning, MoshiForMultiStreamTTS
 
 
 def decode_audio_with_mimi(audio_tokens: np.ndarray, mimi) -> np.ndarray:
-    """Decode 16-codebook stereo audio tokens (8 per speaker × 2) to a 2-channel waveform."""
+    """Decode 16-codebook stereo audio tokens (8 per speaker × 2) to a 2-channel waveform.
+
+    Channel mapping convention: with default inference
+    (`main_speaker_first=False`) and text_chat starting with speaker A,
+    mstts places A's audio at rows 8-15 (the "other" position) and B's at
+    rows 0-7 (the "main" position). We reorder so output channel 0 (LEFT)
+    is the first speaker (= A), matching the project-wide L=A, R=B convention.
+    """
     K, _ = audio_tokens.shape
     assert K // 2 == mimi.num_codebooks, (
         f"Codebook mismatch: {K}//2 != {mimi.num_codebooks}"
     )
     device = next(mimi.parameters()).device
-    # Split (16, T) into (2, 8, T): two speakers, each with their own 8 codebooks
-    tokens = np.stack(np.split(audio_tokens, 2, axis=0), axis=0)
+    main_part, other_part = np.split(audio_tokens, 2, axis=0)
+    # other (= A, first speaker) → channel 0 ; main (= B) → channel 1
+    tokens = np.stack([other_part, main_part], axis=0)
     with torch.no_grad():
         wavs = mimi.decode(torch.from_numpy(tokens).to(device=device)).cpu().numpy()
-    return wavs.squeeze(1)  # (2, wav_len)
+    return wavs.squeeze(1)  # (2, wav_len) — channel 0 = A, channel 1 = B
 
 
 def parse_args():
