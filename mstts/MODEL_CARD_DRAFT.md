@@ -28,7 +28,7 @@ pipeline_tag: text-to-speech
 
 **マルチストリーム日本語対話 TTS モデル**。テキストの2話者対話 (`[[A, "..."], [B, "..."], ...]`) を入力に、24 kHz ステレオ音声（左 ch = 話者 A、右 ch = 話者 B）を生成する。Moshi/Moshika アーキテクチャをベースに、4段階のカリキュラム学習で構築。
 
-> **English summary:** A Japanese multi-stream text-to-speech model that generates 24 kHz stereo dialogue audio (left = speaker A, right = speaker B) from a turn-tagged text dialogue. Built on Kyutai's Moshika via 4-stage curriculum training. **License: CC-BY-NC 4.0 (non-commercial use only)**, inherited from the Moshika base model.
+> **English summary:** A Japanese multi-stream text-to-speech model that generates 24 kHz stereo dialogue audio (left = speaker A, right = speaker B) from a turn-tagged text dialogue. Built on Kyutai's Moshika via 4-stage curriculum training. **License: CC-BY-NC 4.0 (non-commercial use only)**. Note: the base Moshika model itself is CC-BY-4.0; the NC restriction is inherited from J-CHAT and LaboroTVSpeech used in Stage 1, 2 training data.
 
 ---
 
@@ -112,10 +112,10 @@ pipeline_tag: text-to-speech
 
 | データセット | 用途 (stage) | 出典・ライセンス |
 |---|---|---|
-| J-CHAT-mono | Stage 1 | [sarulab-speech/J-CHAT](https://huggingface.co/datasets/sarulab-speech/J-CHAT)（独自ライセンス、要確認） |
+| J-CHAT-mono | Stage 1 | [sarulab-speech/J-CHAT](https://huggingface.co/datasets/sarulab-speech/J-CHAT)（**CC-BY-NC 4.0、商用利用不可**。日本著作権法 30条の4 準拠用途のみ許諾） |
 | ReazonSpeech | Stage 1 | [reazon-research/reazonspeech](https://research.reazon.jp/projects/ReazonSpeech/)（CC-BY 4.0） |
-| LaboroTVSpeech | Stage 1 | [Laboro.AI Inc.](https://laboro.ai/activity/column/engineer/laborotvspeech/)（**非商用限定**） |
-| J-CHAT (multi-stream) | Stage 2 | 上記 J-CHAT を multi-stream 化 |
+| LaboroTVSpeech | Stage 1 | [Laboro.AI Inc.](https://laboro.ai/activity/column/engineer/laborotvspeech/)（**非商用限定**、申請制） |
+| J-CHAT (multi-stream) | Stage 2 | 上記 J-CHAT を multi-stream 化（同じく CC-BY-NC 4.0） |
 | LLM-JP Zoom1 | Stage 3, 4 | LLM-JP プロジェクト共同利用データ（要 LLM-JP との合意確認） |
 
 > **公開前確認事項**:
@@ -249,7 +249,9 @@ uv run python inference.py --text-chat sample_dialogue.json --output-wav out.wav
 
 **CC-BY-NC 4.0** ([Creative Commons Attribution-NonCommercial 4.0](https://creativecommons.org/licenses/by-nc/4.0/))
 
-このライセンスは、ベースモデル `kyutai/moshika-pytorch-bf16` から **継承** されています。
+このライセンスは、Stage 1, 2 の学習データとして使用された **J-CHAT (sarulab-speech, CC-BY-NC 4.0)** および **LaboroTVSpeech (非商用限定)** から **継承** されています。
+
+> **補足**: ベースモデル `kyutai/moshika-pytorch-bf16` 単体は **CC-BY-4.0** (商用利用許諾) ですが、J-CHAT・LaboroTV を含む音声データで追加学習したことで NC 制約が発生しています。Stage 3, 4 の Zoom1 (LLM-JP) は本制約に追加の影響を与えていません。
 
 - ✅ 学術研究、教育、個人的非商用利用 OK
 - ✅ 改変・再配布 OK（同一ライセンスでの公開）
@@ -267,7 +269,7 @@ uv run python inference.py --text-chat sample_dialogue.json --output-wav out.wav
 | Audio codec (Mimi) | Kyutai team | Kyutai |
 | Text tokenizer | rinna | rinna |
 | Stage 1, 2（学習コード＋ checkpoint） | 大橋 厚元 (Atsumoto Ohashi) | 名古屋大学 対話研究グループ |
-| Stage 3, 4（追加学習・統合・公開） | 阿部 祐也 (Yuto Abe) | 早稲田大学 |
+| Stage 3, 4（追加学習・統合・公開） | 阿部 雄斗 (Yuto Abe) | 早稲田大学 |
 | Stage 1 学習データ作成 (J-CHAT-mono) | sarulab-speech | 東京大学 |
 | Stage 1 学習データ作成 (ReazonSpeech) | Reazon Holdings | Reazon Holdings |
 | Stage 1 学習データ作成 (LaboroTV) | Laboro.AI Inc. | Laboro.AI Inc. |

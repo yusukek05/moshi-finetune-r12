@@ -125,7 +125,9 @@ Custom dialogue example:
 
 **CC-BY-NC 4.0**（[Creative Commons Attribution-NonCommercial 4.0](https://creativecommons.org/licenses/by-nc/4.0/)）
 
-ベースモデル `kyutai/moshika-pytorch-bf16` から継承。**商用利用不可**。
+Stage 1, 2 で使用された **J-CHAT (CC-BY-NC 4.0)** および **LaboroTVSpeech (非商用限定)** から継承。**商用利用不可**。
+
+> ベースモデル `kyutai/moshika-pytorch-bf16` 単体は **CC-BY-4.0** ですが、上記の NC データを Stage 1, 2 で混入したことで本モデルは NC 制約下にあります。
 
 ## Attribution
 
