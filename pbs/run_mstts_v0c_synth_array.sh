@@ -45,7 +45,8 @@ unset NCCL_ASYNC_ERROR_HANDLING
 START_IDX=${START_IDX:-0}
 END_IDX=${END_IDX:-1000}
 if [[ -n "${PBS_ARRAY_INDEX:-}" && -n "${SLICE_SIZE:-}" ]]; then
-    START_IDX=$((PBS_ARRAY_INDEX * SLICE_SIZE))
+    # PBS array indices on this site are 1-based; convert to 0-based slice number.
+    START_IDX=$(( (PBS_ARRAY_INDEX - 1) * SLICE_SIZE ))
     END_IDX=$((START_IDX + SLICE_SIZE))
 fi
 NUM_EXAMPLES=$((END_IDX - START_IDX))
