@@ -151,7 +151,7 @@ out_dir = Path(os.environ["OUT_DIR"])
 slice_dir = Path(os.environ["SLICE_DIR"])
 manifest = []
 for wav in sorted((out_dir / "decoded_audio").glob("*.wav")):
-    src_link = slice_dir / wav.stem
+    src_link = slice_dir / f"{wav.stem}.json"
     src_real = src_link.resolve() if src_link.exists() else None
     corpus = "jmultiwoz" if src_real and "jmultiwoz" in str(src_real) else (
         "rpc" if src_real and "rpc" in str(src_real) else "unknown"

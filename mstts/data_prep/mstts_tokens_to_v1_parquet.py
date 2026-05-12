@@ -24,26 +24,24 @@ rows transfer directly, but we need to know which physical position
 ("main" rows 1-8 or "other" rows 9-16) corresponds to v1's "A" vs "B".
 
 ------------------------------------------------------------------
-IMPORTANT — Speaker assignment convention (TO VERIFY ON SMOKE OUTPUT)
+Speaker assignment convention (verified empirically on smoke output)
 ------------------------------------------------------------------
-mstts/hf_inference/inference.py calls:
-    tokenize_text_chat_for_multistream_tts(..., main_speaker_first=False)
-With sample_dialogue.json starting at ["A", "..."], `main_speaker_first=False`
-implies "A speaks first ⇒ A = other_speaker" in mstts's internal terminology
-(turn 0 receives `other_speaker_bos_id=2`).
+mstts/hf_inference/inference.py calls
+`tokenize_text_chat_for_multistream_tts(..., main_speaker_first=False)`.
+With v0c training using `--moshi_speakers A B` (both orderings) and a
+text_chat starting at ["A", "..."]:
+  • Turn 0 (A) receives `other_speaker_bos_id=2` ⇒ mstts treats A as "other"
+  • Turn 1 (B) receives `main_speaker_bos_id=1`  ⇒ mstts treats B as "main"
+  • Audio rows 1-8 (main position) carry **B's** audio
+  • Audio rows 9-16 (other position) carry **A's** audio
+  • After Mimi decode wavs[0]=rows 1-8 → LEFT channel ⇒ LEFT = B, RIGHT = A
 
-But the audio row layout depends on what was passed as `main_speaker` at
-TRAINING TIME (not inference). The user-facing convention is "L=A, R=B" in
-the output WAV; mimi.decode receives rows 1-8 as the LEFT channel. So
-**rows 1-8 = A audio (left), rows 9-16 = B audio (right)**.
+(This contradicts a casual "L=A, R=B" claim that appears elsewhere in the
+docs; the empirical signal — early audio-token diversity at the row where
+the first speaker is active — confirmed L = B.)
 
-⇒ Working hypothesis (verify empirically with smoke run output):
-   • Audio: rows 1-8 → speaker A, rows 9-16 → speaker B
-   • Text:  other_speaker_bos_id (2) marks A's turn start, main_speaker_bos_id (1) marks B's
-
-If the smoke run reveals the opposite mapping, flip `MAIN_SPEAKER_LABEL`.
-
-This script defaults to that hypothesis; pass `--audio-main-label B` to flip.
+Defaults below match this convention. Override with --audio-main-label A
+and --main-speaker-first if your inference call differed.
 
 Usage:
     python mstts_tokens_to_v1_parquet.py \
@@ -96,12 +94,13 @@ def demux_text_channel(
         tok = int(dialogue_text[t])
         if tok == MAIN_SPEAKER_BOS_ID:
             current = main_speaker_label
-        elif tok == OTHER_SPEAKER_BOS_ID:
+            continue  # BOS is a merger artifact; not in per-speaker track
+        if tok == OTHER_SPEAKER_BOS_ID:
             current = other_speaker_label
-        if tok in PADDING_IDS and tok != MAIN_SPEAKER_BOS_ID and tok != OTHER_SPEAKER_BOS_ID:
-            # leave both as padding (already initialised)
             continue
-        # Place token in current speaker's track; the other stays padded
+        if tok == TEXT_PADDING_ID:
+            continue  # both stay padded
+        # Real text token or end_of_text_padding (0) → write to active speaker only
         if current == "A":
             a_text[t] = tok
         else:
@@ -148,9 +147,10 @@ def main():
                    help="Directory containing mstts generated_tokens *.npy files (shape (17, T))")
     p.add_argument("--output-prefix", required=True,
                    help="Parquet prefix: {prefix}-001-of-XXX.parquet etc.")
-    p.add_argument("--audio-main-label", choices=["A", "B"], default="A",
+    p.add_argument("--audio-main-label", choices=["A", "B"], default="B",
                    help="Which v1 label corresponds to mstts 'main' position (rows 1-8). "
-                        "Default A under the L=A R=B convention. Verify on smoke output.")
+                        "Default B: matches mstts inference convention where text_chat "
+                        "starts with A and main_speaker_first=False (verified on v0c output).")
     p.add_argument("--main-speaker-first", action="store_true", default=False,
                    help="Whether the main speaker spoke first (mirror mstts inference flag).")
     p.add_argument("--num-examples-per-parquet", type=int, default=10_000)
