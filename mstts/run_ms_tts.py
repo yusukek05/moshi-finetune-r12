@@ -356,6 +356,7 @@ def main():
     )
 
     for step, batch in enumerate(dataloader):
+        actual_bs = len(batch["text_tokens"])
         gen_tokens, gen_lens = moshi_mstts.generate(
             list_of_text_tokens=batch["text_tokens"],
             generation_length=args.max_generation_length,
@@ -371,7 +372,7 @@ def main():
                 "top_k": args.top_k,
                 "top_p": args.top_p
             },
-            prompt_tokens=prompt_tokens,
+            prompt_tokens=prompt_tokens[:actual_bs],
             num_speaker_embedding_frames=args.num_speaker_embedding_frames,
         )
         undelayed_tokens = undelay_tokens(gen_tokens, moshi_lm.delays)
