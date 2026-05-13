@@ -178,9 +178,14 @@ uv run --no-project --python 3.12 \
 - `/groups/gcg51557/experiments/0178_dialogue_tts/moshi-finetuning` — 大橋さん (名大) のオリジナル mstts コード。本プロジェクトはここをベースに forking
 - 連絡先: 阿部雄斗 <abe@pcl.cs.waseda.ac.jp> / 大橋厚元 (名大)
 
-## 次のステップ (2026-05-12 時点)
+## 進捗 (2026-05-13 更新)
 
+- [x] JMultiWOZ + RPC 全件本番合成 — Job 1758539[1-10]、**46,266 wavs / 約 530 時間** 合成完了。`output/mstts_v0c_synth/{slot}/` 配下
+- [x] v1 parquet 化 — `output/mstts_v0c_synth_parquet/synth_<slot>-001-of-001.parquet` × 10、合計 357 MB
+
+## 次のステップ
+
+- [ ] **v1 追加学習 (本命)**: 上記 parquet を `finetune.py --train_data_files output/mstts_v0c_synth_parquet/synth_*.parquet` で投入。hyperparam・base model・mix ratio (実音声 vs 合成音声) 検討
 - [ ] LaboroTV ライセンス確認 (Laboro.AI 問い合わせ)
-- [ ] JMultiWOZ + RPC 全件 (46K chunks ≈ 640h 相当) の本番合成 (array job)
-- [ ] 合成 wav を v1 finetune に投入する dataloader 設定
 - [ ] HF Space サンプル音声を L=A R=B 版に差し替え (任意、現状 legacy)
+- [ ] RPC 雑談系の品質スポットチェック (production 後半 ~38K rpc wavs の random sample)
