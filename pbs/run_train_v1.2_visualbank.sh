@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q R9920251000
+#PBS -q R9920261000
 #PBS -v RTYPE=rt_HF,USE_SSH=1
 #PBS -l select=1:ncpus=8:ngpus=8
-#PBS -l walltime=24:00:00
+#PBS -l walltime=06:00:00
 #PBS -N 0162_train_v1.2_vb
 #PBS -j oe
 

@@ -1,9 +1,8 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q R9920251000
-#PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=1:ncpus=8:ngpus=8
-#PBS -l walltime=100:00:00
+#PBS -q rt_HF
+#PBS -l select=1:ncpus=192:ngpus=8
+#PBS -l walltime=08:00:00
 #PBS -N 0162_train_v1.2_vb_zoom1
 #PBS -j oe
 
@@ -64,7 +63,7 @@ mpirun \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
       --output_dir  output/v1.2_reazonspeech_jchat_visualbank_zoom1 \
       --train_data_files ${train_data} \
-      --model_dir   output/v1.2_reazonspeech_jchat_visualbank/STEP_XXXXX_fp32 \
+      --model_dir   output/v1.2_reazonspeech_jchat_visualbank/step_1389_fp32 \
       --model_dtype bfloat16 \
       --model_user_stream \
       --max_length 2048 \
@@ -77,4 +76,4 @@ mpirun \
       --logging_steps 10 \
       --report_to wandb \
       --project_name v1.2_reazonspeech_jchat_visualbank_zoom1 \
-      --save_steps 5000
+      --save_steps 1000
