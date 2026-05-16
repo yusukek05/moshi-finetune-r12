@@ -303,6 +303,8 @@ def postprocess_args(args: argparse.Namespace):
 
     if args.report_to is not None:
         args.with_tracking = True
+    else:
+        args.with_tracking = False
 
     if args.resume_from_checkpoint:
         assert os.path.exists(args.resume_from_checkpoint), (

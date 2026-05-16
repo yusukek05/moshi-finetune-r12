@@ -34,18 +34,28 @@ def extend_moshi_modules_for_user_stream(lm: LMModel) -> LMModel:
         # 3.1 self_attn.in_proj
         layer.self_attn.in_proj_weight.data = layer.self_attn.in_proj_weight.data.repeat(2, 1)
 
-        # 3.2 self_attn.out_proj
-        new_linear = torch.nn.Linear(
-            in_features=layer.self_attn.out_proj.in_features,
-            out_features=layer.self_attn.out_proj.out_features * 2,
-            bias=False if layer.self_attn.out_proj.bias is None else True,
-        )
-        new_linear.load_state_dict(
-            {
-                "weight": layer.self_attn.out_proj.weight.repeat(2, 1),
-            }
-        )
-        layer.self_attn.out_proj = new_linear
+        # 3.2 self_attn output projection
+        # Two representations exist depending on the moshi version:
+        # - older: `out_proj` is an nn.Linear submodule.
+        # - newer (weights_per_step > 0): the weights are stored as a bare
+        #   Parameter `out_proj_weight` of shape (dep_q * dim, dim).
+        if hasattr(layer.self_attn, "out_proj") and isinstance(
+            layer.self_attn.out_proj, torch.nn.Module
+        ):
+            new_linear = torch.nn.Linear(
+                in_features=layer.self_attn.out_proj.in_features,
+                out_features=layer.self_attn.out_proj.out_features * 2,
+                bias=False if layer.self_attn.out_proj.bias is None else True,
+            )
+            new_linear.load_state_dict({"weight": layer.self_attn.out_proj.weight.repeat(2, 1)})
+            layer.self_attn.out_proj = new_linear
+        elif hasattr(layer.self_attn, "out_proj_weight"):
+            layer.self_attn.out_proj_weight.data = layer.self_attn.out_proj_weight.data.repeat(2, 1)
+        else:
+            raise AttributeError(
+                "StreamingMultiheadAttention has neither `out_proj` nor "
+                "`out_proj_weight`; cannot extend output projection."
+            )
 
         # 3.3 gating
         layer.gating.extend(deepcopy(layer.gating))

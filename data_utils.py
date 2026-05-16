@@ -334,13 +334,17 @@ def preprocess_function_for_singlechannel(
     list_of_num_streams = [streams.shape[0] for streams in list_of_streams]
     list_of_num_frames = [streams.shape[1] for streams in list_of_streams]
 
-    return {
+    result = {
         "streams": list_of_streams,
-        "kana_stream": list_of_kana_stream,
         "labels": list_of_labels,
         "num_streams": list_of_num_streams,
         "num_frames": list_of_num_frames,
     }
+    # `datasets.map(batched=True)` rejects None values; only emit the kana
+    # stream when it is actually present.
+    if list_of_kana_stream is not None:
+        result["kana_stream"] = list_of_kana_stream
+    return result
 
 def merged_speaker_streams(
         batched_examples: dict[str, list[Any]],
