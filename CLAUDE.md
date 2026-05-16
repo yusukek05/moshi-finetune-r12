@@ -70,22 +70,22 @@ export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 | `assert use_deepspeed` で落ちる (mstts) | mstts/finetune.py が DeepSpeed 必須。1 GPU smoke でも `--use_deepspeed` + zero3 が要る |
 | `AssertionError: NO_TORCH_COMPILE not set` | 上記環境変数を `mpirun -x` で渡す |
 
-## ライセンス系譜 (2026-05-12 検証済、要注意)
+## ライセンス系譜 (2026-05-14 更新、要注意)
 
 | 構成要素 | License | 商用 |
 |---|---|---|
 | Kyutai Moshika (base model) | **CC-BY-4.0** | ✅ |
 | ReazonSpeech (Stage 1) | CC-BY-4.0 | ✅ |
-| **J-CHAT (Stage 1, 2)** | **CC-BY-NC-4.0** | ❌ (NC 継承主因) |
-| LaboroTVSpeech (Stage 1) | 非商用限定・申請制 | ❌ |
-| LLM-JP Zoom1 (Stage 3, 4) | LLM-JP 内利用 | 要確認 |
-| → **v0b/v0c 最終ライセンス** | **CC-BY-NC-4.0** | ❌ |
+| J-CHAT (Stage 1, 2) | 商用利用可 (2026-05-14 阿部確認) | ✅ |
+| LaboroTVSpeech (Stage 1) | 非商用限定・申請制 | ❌ (**残る唯一の NC 継承主因**) |
+| LLM-JP Zoom1 (Stage 3, 4) | LLM-JP 内利用 | ✅ (2026-05-14 阿部確認) |
+| → **v0b/v0c 最終ライセンス** | **CC-BY-NC-4.0** | ❌ (LaboroTV 由来) |
 | JMultiWOZ (新規) | CC-BY-SA-4.0 (学習モデルは SA 免除明記) | ✅ |
 | RealPersonaChat (新規) | CC-BY-SA-4.0 | ✅ |
 
-ベース Moshika は CC-BY-4.0 だが、Stage 1, 2 で混入した J-CHAT/LaboroTV が NC のため最終モデルは NC 制約下にある。MODEL_CARD_DRAFT / HF README / Space は全てこの理由を明記済。
+J-CHAT・Zoom1 は商用可と確認されたため、v1 系 (ReazonSpeech → J-CHAT → Zoom1) は商用クリーン。一方 **mstts v0b/v0c は系譜に LaboroTV (非商用) を含むため依然 NC 制約下**。MODEL_CARD_DRAFT / HF README / Space は v0c の NC 表記済 (理由は LaboroTV に集約された)。
 
-**LaboroTV のライセンスはまだ完全には確認できておらず、Laboro.AI への問い合わせ必要**。
+**LaboroTV のライセンスはまだ完全には確認できておらず、Laboro.AI への問い合わせ必要**。合成対話音声を商用版 v1.x のデータに使うには、**LaboroTV を抜いた mstts を作り直す**必要がある可能性が高い。
 
 ## スピーカー / チャンネル規約 (重要)
 
