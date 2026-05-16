@@ -1,13 +1,22 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q R9920261000
+#PBS -q rt_HF
 #PBS -v RTYPE=rt_HF,USE_SSH=1
-#PBS -l select=1:ncpus=8:ngpus=8
+#PBS -l select=1:ncpus=192:ngpus=8
 #PBS -l walltime=24:00:00
 #PBS -N 0162_train_v1.2_synth_phase1
 #PBS -j oe
 
 # Phase 1 of v1 finetuning with mstts-synthesised data.
+#
+# Queue note (2026-05-13):
+#   - First attempt (1758817) on R9920261000 was SIGTERM'd at 1:00:47 due
+#     to preemption (preempt_sort=min_time_since_start). step_500/step_1000
+#     were saved cleanly to .../synthphase1_attempt1_killed/.
+#   - R9920251000 (the original v1.2_zoom1 reservation, 100h walltime) no
+#     longer exists.
+#   - Falling back to general rt_HF queue: walltime cap 168h, requires full
+#     node allocation (ncpus=192). No preemption.
 #
 # Strategy (synth-only, conservative):
 #   - Base: v1.2 J-CHAT pretrain (step_8880_fp32) — same as the original
