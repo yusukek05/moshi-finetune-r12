@@ -3,7 +3,7 @@
 #PBS -q R9920261000
 #PBS -v RTYPE=rt_HF
 #PBS -l select=1:ncpus=8:ngpus=1
-#PBS -l walltime=01:00:00
+#PBS -l walltime=03:00:00
 #PBS -N 0162_asr_cer
 #PBS -j oe
 
@@ -23,7 +23,6 @@ module load cuda/12.6/12.6.1
 module load python/3.12/3.12.9
 
 PAPER=/home/acg17145sv/projects/icml-mlforaudio-2026
-REF_PARQUET=processed_data/llmjp-zoom1/test-001-of-001.parquet
 
 mkdir -p "$PAPER/results"
 
@@ -41,11 +40,8 @@ for ROOT in output/v11_eval_compare output/4way_eval_compare_50; do
     uv run --no-project --python 3.12 "${UV_DEPS[@]}" \
         python "$PAPER/scripts/run_asr_cer_eval.py" \
             --compare_root "$ROOT" \
-            --reference_parquet "$REF_PARQUET" \
             --asr_backend whisper \
-            --speaker A \
-            --prompt_length_frames 125 \
-            --clip_seconds 10 \
+            --clip_seconds 0 \
             --output_json "$OUT_JSON"
 done
 
