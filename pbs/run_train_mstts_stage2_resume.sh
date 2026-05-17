@@ -34,6 +34,7 @@ export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_NVLS_ENABLE=0
 export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=7200
+export DEEPSPEED_TIMEOUT=120          # in MINUTES, belt-and-suspenders alongside the explicit deepspeed.init_distributed call in finetune_ms_tts.py
 unset  NCCL_ASYNC_ERROR_HANDLING
 unset NCCL_IB_DISABLE
 ulimit -l unlimited
@@ -55,6 +56,7 @@ mpirun \
   --bind-to none \
   --oversubscribe \
   -x NCCL_NVLS_ENABLE -x NO_TORCH_COMPILE -x TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC \
+  -x DEEPSPEED_TIMEOUT \
   -x NCCL_DEBUG -x NCCL_ASYNC_ERROR_HANDLING -x NCCL_IB_DISABLE \
   -x LD_LIBRARY_PATH -x PATH \
   uv run python finetune_ms_tts.py \

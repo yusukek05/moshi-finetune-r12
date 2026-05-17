@@ -50,6 +50,19 @@ def main():
     args = parser.parse_args()
     postprocess_args(args)
 
+    # Initialize the process group BEFORE Accelerator so the NCCL watchdog
+    # timeout matches --process_group_timeout. Otherwise DeepSpeed (via
+    # Accelerator) inits the PG with a default that is too short to survive
+    # the dataloader fast-forward on resume from a mid-training checkpoint,
+    # and the next reduce_scatter times out at ~10 min (see step 5001->5002
+    # stall in 0162_train_mstts_stage2_resume.o1771875 / o1772194).
+    if args.use_deepspeed and args.launcher == "mpi":
+        import deepspeed
+        deepspeed.init_distributed(
+            dist_backend="nccl",
+            timeout=timedelta(seconds=args.process_group_timeout),
+        )
+
     accelerator_kwargs = {
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
         "kwargs_handlers": [

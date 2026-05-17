@@ -33,7 +33,7 @@ UV_DEPS=(--with faster-whisper --with jiwer --with soundfile
          --with transformers --with sentencepiece --with pyarrow --with numpy
          --with tqdm)
 
-for ROOT in output/v11_eval_compare output/4way_eval_compare_50; do
+for ROOT in output/v11_eval_compare output/4way_eval_compare_50 output/v1_lineage_eval; do
     [ -d "$ROOT" ] || continue
     OUT_JSON="$PAPER/results/asr_cer_$(basename $ROOT).json"
     echo "=== $ROOT -> $OUT_JSON ==="
