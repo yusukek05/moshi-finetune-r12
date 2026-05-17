@@ -86,6 +86,7 @@ mpirun \
       --moshi_speakers A B \
       --main_speaker_bos_id 1 \
       --other_speaker_bos_id 2 \
+      --process_group_timeout 7200 \
       --seed 42
 
 echo "DONE. Checkpoints under $OUT_DIR/"

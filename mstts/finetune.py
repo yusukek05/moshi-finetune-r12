@@ -118,6 +118,12 @@ def setup_argparser(parser: argparse.ArgumentParser):
         default=".cache/huggingface/datasets",
         help="Directory to cache the datasets.",
     )
+    parser.add_argument(
+        "--process_group_timeout",
+        type=int,
+        default=3600,
+        help="Timeout for the process group initialization (in seconds).",
+    )
 
     parser.add_argument(
         "--deepspeed_config_file",
@@ -286,6 +292,8 @@ def postprocess_args(args: argparse.Namespace):
         missmatch_args = []
         for key, value in vars(args).items():
             if key in different_keys:
+                continue
+            if key not in prev_config:
                 continue
             if prev_config[key] != value:
                 missmatch_args.append(f"{key}: {prev_config[key]} != {value}")

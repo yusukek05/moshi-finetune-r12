@@ -4,13 +4,14 @@ import math
 import logging
 import argparse
 import collections
+from datetime import timedelta
 
 import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from datasets import load_dataset   
-from accelerate import Accelerator
+from datasets import load_dataset
+from accelerate import Accelerator, InitProcessGroupKwargs
 from accelerate.logging import get_logger
 from accelerate.utils import DummyOptim, DummyScheduler, set_seed
 
@@ -51,6 +52,9 @@ def main():
 
     accelerator_kwargs = {
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
+        "kwargs_handlers": [
+            InitProcessGroupKwargs(timeout=timedelta(seconds=args.process_group_timeout)),
+        ],
     }
 
     if args.with_tracking:
