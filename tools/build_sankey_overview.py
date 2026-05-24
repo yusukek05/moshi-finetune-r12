@@ -33,14 +33,14 @@ NODES = [
     # SOURCES (raw corpora & base models)
     ("Kyutai Moshiko (base) — CC-BY-4.0", "src", C_BASE),  # 0
     ("Kyutai Moshika (base) — CC-BY-4.0", "src", C_BASE),  # 1
-    ("ReazonSpeech — CC-BY-4.0", "src", C_OK),  # 2
-    ("J-CHAT — commercial OK", "src", C_OK),  # 3
-    ("LaboroTV — NC ⚠", "src", C_NC),  # 4
-    ("Zoom1 (LLM-jp) — 935h train (CC-BY+LLM-jp)", "src", C_OK),  # 5
-    ("VisualBank — 300h", "src", C_UNK),  # 6
-    ("ccaudio raw_all — 23,685h (CC)", "src", C_OK),  # 7
-    ("JMultiWOZ — 7,469 chunks (CC-BY-SA)", "src", C_OK),  # 8
-    ("RealPersonaChat — 38,797 chunks (CC-BY-SA)", "src", C_OK),  # 9
+    ("ReazonSpeech — 4,851h used (of 35k avail) / CC-BY-4.0", "src", C_OK),  # 2
+    ("J-CHAT — 72,053h mono / 57,466h podcast-mstts (commercial OK)", "src", C_OK),  # 3
+    ("LaboroTV — 6,614h / NC ⚠", "src", C_NC),  # 4
+    ("Zoom1 (LLM-jp) — 935h train / CC-BY+LLM-jp", "src", C_OK),  # 5
+    ("VisualBank — 307h", "src", C_UNK),  # 6
+    ("ccaudio raw_all — 23,685h / CC", "src", C_OK),  # 7
+    ("JMultiWOZ — 7,469 chunks (text, CC-BY-SA)", "src", C_OK),  # 8
+    ("RealPersonaChat — 38,797 chunks (text, CC-BY-SA)", "src", C_OK),  # 9
     ("pseudo_dialog_kanzaki — private synth", "src", C_UNK),  # 10
     # INTERMEDIATES
     ("0178 mono ckpt (moshika+Reazon+J-CHAT+LaboroTV)", "mid", C_NC),  # 11
@@ -106,67 +106,70 @@ IDX = {
 EDGES = [
     # === 0178 mono construction (foundation of v0b/c/d) ===
     ("moshika", "mono0178", 1, "base weights", C_BASE),
-    ("reazon", "mono0178", 300, "~300h", C_OK),
-    ("jchat", "mono0178", 300, "~300h", C_OK),
-    ("laboro", "mono0178", 300, "~300h ⚠NC", C_NC),
+    ("reazon", "mono0178", 4851, "ReazonSpeech 4,851h", C_OK),
+    ("jchat", "mono0178", 72053, "J-CHAT-mono 72,053h", C_OK),
+    ("laboro", "mono0178", 6614, "LaboroTV 6,614h ⚠NC", C_NC),
     # === 0178 mstts (mono + J-CHAT multi-stream) ===
-    ("mono0178", "mstts0178", 900, "mono ckpt", C_NC),
-    ("jchat", "mstts0178", 200, "+J-CHAT mstts", C_OK),
+    ("mono0178", "mstts0178", 83519, "mono ckpt (all inputs)", C_NC),
+    ("jchat", "mstts0178", 57466, "J-CHAT-podcast 57,466h (mstts)", C_OK),
     # === v0a-c training ===
     ("moshiko", "v0a", 1, "base", C_BASE),
-    ("jchat", "v0a", 50, "J-CHAT 1shard", C_OK),
-    ("mstts0178", "v0b", 1100, "init ckpt", C_NC),
-    ("zoom1", "v0b", 935, "Zoom1 +500", C_OK),
-    ("v0b", "v0c", 1200, "v0b ckpt", C_NC),
-    ("zoom1", "v0c", 935, "Zoom1 +1500", C_OK),
+    ("jchat", "v0a", 146, "J-CHAT 1shard (~146h)", C_OK),
+    ("mstts0178", "v0b", 140985, "init ckpt (mono+mstts data)", C_NC),
+    ("zoom1", "v0b", 935, "Zoom1 +500 step", C_OK),
+    ("v0b", "v0c", 141920, "v0b ckpt", C_NC),
+    ("zoom1", "v0c", 935, "Zoom1 +1500 step", C_OK),
     # === v0d (failed): moshika + Reazon + J-CHAT + ccaudio v1 → mstts → Zoom1 ===
     ("moshika", "v0d", 1, "base", C_BASE),
-    ("reazon", "v0d", 300, "Stage 1", C_OK),
-    ("jchat", "v0d", 300, "Stage 1/2", C_OK),
+    ("reazon", "v0d", 4851, "Stage 1 mono", C_OK),
+    ("jchat", "v0d", 72053, "Stage 1 J-CHAT-mono", C_OK),
+    ("jchat", "v0d", 57466, "Stage 2 J-CHAT-podcast", C_OK),
     ("cc_raw", "v0d", 6613, "ccaudio v1 transcribed (broken filter)", C_OK),
     ("zoom1", "v0d", 935, "Stage 3", C_OK),
     # === ccaudio v2 reprocess (CURRENT WORK) ===
-    ("cc_raw", "cc_v2", 23685, "raw → VAD re-seg + re-ASR (filter ~9.4% kept)", C_OK),
+    ("cc_raw", "cc_v2", 23685, "raw → VAD re-seg + re-ASR (~9.4% kept)", C_OK),
     # === v0d_v2 (planned) ===
     ("moshika", "v0d_v2", 1, "base", C_BASE),
-    ("reazon", "v0d_v2", 300, "Stage 1", C_OK),
-    ("jchat", "v0d_v2", 300, "Stage 1/2", C_OK),
+    ("reazon", "v0d_v2", 4851, "Stage 1 mono", C_OK),
+    ("jchat", "v0d_v2", 72053, "Stage 1 J-CHAT-mono", C_OK),
+    ("jchat", "v0d_v2", 57466, "Stage 2 J-CHAT-podcast", C_OK),
     ("cc_v2", "v0d_v2", 2232, "ccaudio v2 (2,232h)", C_OK),
     ("zoom1", "v0d_v2", 935, "Stage 3", C_OK),
     # === mstts text inputs → synth corpus generation ===
-    ("jmw", "mstts_text", 60, "~60h text chunks", C_OK),
-    ("rpc", "mstts_text", 320, "~320h text chunks", C_OK),
-    ("mstts_text", "synth_wav", 380, "text → v0c inference", C_OK),
-    ("v0c", "synth_wav", 380, "v0c synth engine ⚠NC", C_NC),
-    ("synth_wav", "synth_parquet", 530, "wavs → v1 parquet", C_NC),
+    # h here = synth output hours contributed (proportional to chunk count)
+    ("jmw", "mstts_text", 85, "7,469 chunks → ~85h synth", C_OK),
+    ("rpc", "mstts_text", 442, "38,797 chunks → ~442h synth", C_OK),
+    ("mstts_text", "synth_wav", 527, "text → v0c inference", C_OK),
+    ("v0c", "synth_wav", 527, "v0c synth engine ⚠NC", C_NC),
+    ("synth_wav", "synth_parquet", 527, "wavs → v1 parquet", C_NC),
     # === v1 line ===
     ("moshiko", "v1", 1, "base", C_BASE),
-    ("jchat", "v1", 300, "Stage 1", C_OK),
-    ("zoom1", "v1", 935, "Stage 2", C_OK),
+    ("jchat", "v1", 72053, "Stage 1 J-CHAT-mono", C_OK),
+    ("zoom1", "v1", 935, "Stage 2 Zoom1", C_OK),
     ("moshiko", "v1_1", 1, "base", C_BASE),
-    ("reazon", "v1_1", 300, "+ReazonSpeech", C_OK),
-    ("jchat", "v1_1", 300, "Stage 2", C_OK),
-    ("zoom1", "v1_1", 935, "Stage 3", C_OK),
+    ("reazon", "v1_1", 4851, "Stage 1 ReazonSpeech", C_OK),
+    ("jchat", "v1_1", 72053, "Stage 2 J-CHAT-mono", C_OK),
+    ("zoom1", "v1_1", 935, "Stage 3 Zoom1", C_OK),
     ("moshiko", "v1_2", 1, "base", C_BASE),
-    ("reazon", "v1_2", 300, "Stage 1", C_OK),
-    ("jchat", "v1_2", 300, "Stage 2", C_OK),
-    ("vb", "v1_2", 300, "+VisualBank", C_UNK),
-    ("zoom1", "v1_2", 935, "Stage 4", C_OK),
+    ("reazon", "v1_2", 4851, "Stage 1", C_OK),
+    ("jchat", "v1_2", 72053, "Stage 2", C_OK),
+    ("vb", "v1_2", 307, "Stage 3 VisualBank", C_UNK),
+    ("zoom1", "v1_2", 935, "Stage 4 Zoom1", C_OK),
     # === v1.3 (planned, needs commercial mstts) ===
-    ("v0d_v2", "synth_commercial", 380, "v0d_v2 as synth engine", C_PLAN),
-    ("mstts_text", "synth_commercial", 380, "same text inputs", C_OK),
+    ("v0d_v2", "synth_commercial", 527, "v0d_v2 as synth engine", C_PLAN),
+    ("mstts_text", "synth_commercial", 527, "same text inputs", C_OK),
     ("moshiko", "v1_3", 1, "base", C_BASE),
-    ("reazon", "v1_3", 300, "Stage 1", C_OK),
-    ("jchat", "v1_3", 300, "Stage 2", C_OK),
-    ("vb", "v1_3", 300, "Stage 3", C_UNK),
-    ("synth_commercial", "v1_3", 530, "+commercial synth", C_PLAN),
-    ("zoom1", "v1_3", 935, "Stage 5", C_OK),
-    # === v1.1 ablation cluster (experimental, private) ===
+    ("reazon", "v1_3", 4851, "Stage 1", C_OK),
+    ("jchat", "v1_3", 72053, "Stage 2", C_OK),
+    ("vb", "v1_3", 307, "Stage 3", C_UNK),
+    ("synth_commercial", "v1_3", 527, "+commercial synth", C_PLAN),
+    ("zoom1", "v1_3", 935, "Stage 5 Zoom1", C_OK),
+    # === v1.1 ablation cluster (experimental, private; mixed subsets) ===
     ("moshiko", "v1_ablation", 1, "base", C_BASE),
-    ("jchat", "v1_ablation", 300, "J-CHAT", C_OK),
+    ("jchat", "v1_ablation", 72053, "J-CHAT", C_OK),
     ("zoom1", "v1_ablation", 935, "Zoom1", C_OK),
-    ("vb", "v1_ablation", 100, "VB subsets", C_UNK),
-    ("pseudo", "v1_ablation", 50, "神崎 synth", C_UNK),
+    ("vb", "v1_ablation", 307, "VB subsets", C_UNK),
+    ("pseudo", "v1_ablation", 100, "神崎 synth (~100h estimate)", C_UNK),
 ]
 
 # Resolve symbolic edges to numeric indices.
@@ -239,8 +242,9 @@ fig.update_layout(
         "text": (
             "<b>0162 LLM-jp-Moshi data flow</b>"
             "<br><span style='font-size:13px'>Sources → Intermediates → Models. "
-            "Color = license (green=commercial OK, red=NC-blocked, gold=planned, "
-            "blue=base ckpt, gray=other). Hover edges for details. "
+            "Edge width = audio hours (linear; J-CHAT at 72k dwarfs everything "
+            "by design). Color = license (green=commercial OK, red=NC, "
+            "gold=planned, blue=base, gray=other). Hover for details. "
             "Snapshot: 2026-05-24.</span>"
         ),
         "x": 0.5,
