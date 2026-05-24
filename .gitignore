@@ -46,6 +46,7 @@ job_logs_for_llm-jp-3
 hostfile_mpi_logs
 
 # PBS/MPI job logs
+logs/
 *.pbs1.log
 *.pbs1
 0162_*.o*
