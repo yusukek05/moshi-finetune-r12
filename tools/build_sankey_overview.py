@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import math
-from collections import defaultdict
 from pathlib import Path
 
 import plotly.graph_objects as go
@@ -64,7 +63,6 @@ NODES = [
         "src",
         C_OK,
     ),  # 9
-    ("pseudo_kanzaki", "pseudo_dialog_kanzaki: private synth corpus (神崎氏)", "src", C_UNK),  # 10
     # INTERMEDIATES
     (
         "0178 mono ckpt",
@@ -113,33 +111,27 @@ NODES = [
     ),  # 19
     ("v1.2 (MOS pending)", "v1.2: +VisualBank, ckpt ready, MOS eval pending", "model", C_OK),  # 20
     ("v1.3 (planned)", "v1.3: +commercial synth corpus (needs v0d_v2)", "model", C_PLAN),  # 21
-    (
-        "v1.1b-e (ablation)",
-        "v1.1b/c/d/e: synth ablation experiments (HF private)",
-        "model",
-        C_UNK,
-    ),  # 22
-    # MODELS — mstts line
-    ("v0a (toy)", "v0a: moshiko + J-CHAT 1shard — toy test only (noisy)", "model", C_UNK),  # 23
-    ("v0b", "v0b: 0178 mstts + Zoom1 (+500 step, HF private)", "model", C_NC),  # 24
+    # MODELS — mstts line (v0a toy + v1.1b-e ablation cluster omitted to keep
+    # the diagram focused on the public roadmap; see git history if needed.)
+    ("v0b", "v0b: 0178 mstts + Zoom1 (+500 step, HF private)", "model", C_NC),  # 22
     (
         "v0c (prod mstts)",
         "v0c: v0b + Zoom1 (+1500 step) — current production synth engine",
         "model",
         C_NC,
-    ),  # 25
+    ),  # 23
     (
         "v0d ❌ failed",
         "v0d: LaboroTV-free rebuild attempt — failed (CER 63.6% vs v0c 36.1%)",
         "model",
         C_NC,
-    ),  # 26
+    ),  # 24
     (
         "v0d_v2 (planned)",
         "v0d_v2: ccaudio v2 rebuild (in progress, planned production)",
         "model",
         C_PLAN,
-    ),  # 27
+    ),  # 25
 ]
 
 LABELS = [n[0] for n in NODES]
@@ -158,24 +150,21 @@ IDX = {
     "cc_raw": 7,
     "jmw": 8,
     "rpc": 9,
-    "pseudo": 10,
-    "mono0178": 11,
-    "mstts0178": 12,
-    "cc_v2": 13,
-    "mstts_text": 14,
-    "synth_wav": 15,
-    "synth_parquet": 16,
-    "synth_commercial": 17,
-    "v1": 18,
-    "v1_1": 19,
-    "v1_2": 20,
-    "v1_3": 21,
-    "v1_ablation": 22,
-    "v0a": 23,
-    "v0b": 24,
-    "v0c": 25,
-    "v0d": 26,
-    "v0d_v2": 27,
+    "mono0178": 10,
+    "mstts0178": 11,
+    "cc_v2": 12,
+    "mstts_text": 13,
+    "synth_wav": 14,
+    "synth_parquet": 15,
+    "synth_commercial": 16,
+    "v1": 17,
+    "v1_1": 18,
+    "v1_2": 19,
+    "v1_3": 20,
+    "v0b": 21,
+    "v0c": 22,
+    "v0d": 23,
+    "v0d_v2": 24,
 }
 
 # ---------------------------------------------------------------------------
@@ -191,9 +180,7 @@ EDGES = [
     # === 0178 mstts (mono + J-CHAT multi-stream) ===
     ("mono0178", "mstts0178", 83519, "mono ckpt (all inputs)", C_NC),
     ("jchat", "mstts0178", 57466, "J-CHAT-podcast 57,466h (mstts)", C_OK),
-    # === v0a-c training ===
-    ("moshiko", "v0a", 1, "base", C_BASE),
-    ("jchat", "v0a", 146, "J-CHAT 1shard (~146h)", C_OK),
+    # === v0b/c training ===
     ("mstts0178", "v0b", 140985, "init ckpt (mono+mstts data)", C_NC),
     ("zoom1", "v0b", 935, "Zoom1 +500 step", C_OK),
     ("v0b", "v0c", 141920, "v0b ckpt", C_NC),
@@ -243,12 +230,6 @@ EDGES = [
     ("vb", "v1_3", 307, "Stage 3", C_UNK),
     ("synth_commercial", "v1_3", 527, "+commercial synth", C_PLAN),
     ("zoom1", "v1_3", 935, "Stage 5 Zoom1", C_OK),
-    # === v1.1 ablation cluster (experimental, private; mixed subsets) ===
-    ("moshiko", "v1_ablation", 1, "base", C_BASE),
-    ("jchat", "v1_ablation", 72053, "J-CHAT", C_OK),
-    ("zoom1", "v1_ablation", 935, "Zoom1", C_OK),
-    ("vb", "v1_ablation", 307, "VB subsets", C_UNK),
-    ("pseudo", "v1_ablation", 100, "神崎 synth (~100h estimate)", C_UNK),
 ]
 
 # Resolve symbolic edges to numeric indices.
@@ -281,17 +262,10 @@ def _col_x(group: str) -> float:
 
 
 x_pos = [_col_x(n[2]) for n in NODES]
-
-# y positions: spread within column
-per_col: dict[str, list[int]] = defaultdict(list)
-for i, (_lbl, _hover, grp, _c) in enumerate(NODES):
-    per_col[grp].append(i)
-y_pos: list[float] = [0.0] * len(NODES)
-for idxs in per_col.values():
-    n = len(idxs)
-    for j, i in enumerate(idxs):
-        # nudge into [0.02, 0.98] band to avoid clipping
-        y_pos[i] = 0.02 + (j + 0.5) * (0.96 / n)
+# Deliberately NOT providing y positions — let Plotly's snap algorithm
+# pack nodes vertically based on edge flow. Manual y positions clashed
+# with the auto-computed node heights (heavy nodes pushed the bottom
+# of the column out of the canvas until user-interaction re-packed it).
 
 # ---------------------------------------------------------------------------
 # Build figure
@@ -308,7 +282,6 @@ fig = go.Figure(
                 "thickness": 22,
                 "line": {"color": "#222", "width": 0.8},
                 "x": x_pos,
-                "y": y_pos,
                 "hovertemplate": "<b>%{label}</b><br>%{customdata}<extra></extra>",
             },
             link={
@@ -361,8 +334,8 @@ fig.update_layout(
     },
     font={"family": "Inter, -apple-system, system-ui, sans-serif", "size": 13},
     paper_bgcolor="#fafafa",
-    margin={"l": 10, "r": 10, "t": 130, "b": 30},
-    height=1200,
+    margin={"l": 10, "r": 10, "t": 130, "b": 40},
+    height=1500,
 )
 
 
@@ -386,7 +359,7 @@ _WRAPPER_HTML = """<!DOCTYPE html>
     }}
     .chart-wrap {{
       width: 100%;
-      min-height: 1240px; /* chart height + a little slack */
+      min-height: 1540px; /* chart height + a little slack */
     }}
     .plotly-graph-div {{ width: 100% !important; }}
   </style>
