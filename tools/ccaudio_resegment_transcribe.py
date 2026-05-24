@@ -34,7 +34,6 @@ import torchaudio
 from huggingface_hub import hf_hub_download
 from moshi.models import loaders
 from sentencepiece import SentencePieceProcessor
-from tqdm import tqdm
 
 from tools.ccaudio_to_parquet import (
     is_hallucinated,
@@ -74,9 +73,7 @@ def main(args: argparse.Namespace) -> None:
     print(f"[info] mimi sr={mimi.sample_rate} fr={mimi.frame_rate} K={mimi.num_codebooks}")
 
     print("[info] loading rinna SP tokenizer …")
-    sp = SentencePieceProcessor(
-        hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name)
-    )
+    sp = SentencePieceProcessor(hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name))
 
     print("[info] loading faster-whisper large-v3 …")
     from faster_whisper import WhisperModel
@@ -161,9 +158,7 @@ def main(args: argparse.Namespace) -> None:
                 a0 = int(seg.start * mimi.sample_rate)
                 a1 = int(seg.end * mimi.sample_rate)
                 seg_wav = wav24[a0:a1].to(device)
-                audio_ids = tokenize_audio_chunked(
-                    seg_wav, mimi, args.audio_chunk_size_s
-                ).numpy()
+                audio_ids = tokenize_audio_chunked(seg_wav, mimi, args.audio_chunk_size_s).numpy()
                 text_ids = tokenize_text_aligned(
                     words,
                     sp,
@@ -188,8 +183,13 @@ def main(args: argparse.Namespace) -> None:
             rows_text.append(text_list)
             rows_audio.append(audio_list)
             transcripts.append(
-                {"key": key, "start": round(seg.start, 2), "end": round(seg.end, 2),
-                 "dur": round(dur, 2), "text": text}
+                {
+                    "key": key,
+                    "start": round(seg.start, 2),
+                    "end": round(seg.end, 2),
+                    "dur": round(dur, 2),
+                    "text": text,
+                }
             )
             n_kept += 1
         print(
@@ -230,15 +230,27 @@ def main(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cc_root", type=str,
-                    default="/groups/gcg51557/experiments/0167_cc_audio/asai/ccaudio_rss_transcribed_array",
-                    help="Root with per-slice dirs holding recording.*.tar (slice mode).")
-    ap.add_argument("--slice_idx", type=int, default=-1,
-                    help="transcribed_array slice 0..99 (slice mode).")
-    ap.add_argument("--tar_path", type=str, default=None,
-                    help="A single recording.*.tar to process (raw_all mode; one tar per shard).")
-    ap.add_argument("--shard_id", type=int, default=0,
-                    help="Output shard index for --tar_path mode -> shard-NNNNN.parquet.")
+    ap.add_argument(
+        "--cc_root",
+        type=str,
+        default="/groups/gcg51557/experiments/0167_cc_audio/asai/ccaudio_rss_transcribed_array",
+        help="Root with per-slice dirs holding recording.*.tar (slice mode).",
+    )
+    ap.add_argument(
+        "--slice_idx", type=int, default=-1, help="transcribed_array slice 0..99 (slice mode)."
+    )
+    ap.add_argument(
+        "--tar_path",
+        type=str,
+        default=None,
+        help="A single recording.*.tar to process (raw_all mode; one tar per shard).",
+    )
+    ap.add_argument(
+        "--shard_id",
+        type=int,
+        default=0,
+        help="Output shard index for --tar_path mode -> shard-NNNNN.parquet.",
+    )
     ap.add_argument("--output_dir", type=str, required=True)
     ap.add_argument("--max_episodes", type=int, default=0, help="0 = all; >0 for smoke.")
     # segmentation / quality thresholds
@@ -255,7 +267,9 @@ if __name__ == "__main__":
     ap.add_argument("--text_padding_id", type=int, default=3)
     ap.add_argument("--end_of_text_padding_id", type=int, default=0)
     ap.add_argument("--audio_tokenizer_repo", default="kyutai/moshiko-pytorch-bf16")
-    ap.add_argument("--audio_tokenizer_name", default="tokenizer-e351c8d8-checkpoint125.safetensors")
+    ap.add_argument(
+        "--audio_tokenizer_name", default="tokenizer-e351c8d8-checkpoint125.safetensors"
+    )
     ap.add_argument("--text_tokenizer_repo", default="rinna/japanese-gpt2-medium")
     ap.add_argument("--text_tokenizer_name", default="spiece.model")
     ap.add_argument("--overwrite", action="store_true")

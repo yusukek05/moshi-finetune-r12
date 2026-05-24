@@ -26,7 +26,6 @@ from moshi.models import MimiModel, loaders
 from sentencepiece import SentencePieceProcessor
 from tqdm import tqdm
 
-
 CC_JA_RANGES = (
     (0x3040, 0x309F),  # hiragana
     (0x30A0, 0x30FF),  # katakana
@@ -153,7 +152,7 @@ def tokenize_text_aligned(
 
     # char-level transcript reconstruction from word transcript
     char_segs: list[tuple[float, float, str]] = []  # (start, end, char)
-    for word, (_, s, d, _c) in zip(parts, words):
+    for word, (_, s, d, _c) in zip(parts, words, strict=True):
         if not word:
             continue
         per = d / max(1, len(word))
@@ -265,9 +264,7 @@ def main(args: argparse.Namespace) -> None:
     print(f"[info] mimi sr={mimi.sample_rate} fr={mimi.frame_rate} K={mimi.num_codebooks}")
 
     print("[info] loading rinna SP tokenizer …")
-    sp = SentencePieceProcessor(
-        hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name)
-    )
+    sp = SentencePieceProcessor(hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name))
 
     rows_key: list[str] = []
     rows_text: list[list[int]] = []
@@ -281,9 +278,7 @@ def main(args: argparse.Namespace) -> None:
         cut_id = cut["id"]
         sup = cut["supervisions"][0]
         text = sup.get("text", "") or ""
-        bad, reason = is_hallucinated(
-            text, args.rep_ratio_thresh, args.non_ja_thresh
-        )
+        bad, reason = is_hallucinated(text, args.rep_ratio_thresh, args.non_ja_thresh)
         if bad:
             n_drop_text += 1
             pbar.set_postfix_str(f"kept={n_kept} drop_text={n_drop_text} drop_err={n_drop_err}")
@@ -323,7 +318,7 @@ def main(args: argparse.Namespace) -> None:
     elapsed = time.time() - t0
     print(
         f"[done] slice={args.slice_idx} cuts_total={n_total} kept={n_kept} "
-        f"drop_text={n_drop_text} drop_err={n_drop_err} elapsed={elapsed/60:.1f}min"
+        f"drop_text={n_drop_text} drop_err={n_drop_err} elapsed={elapsed / 60:.1f}min"
     )
 
     if not rows_key:
@@ -334,9 +329,7 @@ def main(args: argparse.Namespace) -> None:
         {
             "__key__": pa.array(rows_key, type=pa.string()),
             "A_text": pa.array(rows_text, type=pa.list_(pa.int64())),
-            "A_audio": pa.array(
-                rows_audio, type=pa.list_(pa.list_(pa.int64()))
-            ),
+            "A_audio": pa.array(rows_audio, type=pa.list_(pa.list_(pa.int64()))),
         }
     )
     pq.write_table(table, out_path, compression="zstd")
@@ -345,24 +338,45 @@ def main(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cc_root", type=str,
-                    default="/groups/gcg51557/experiments/0167_cc_audio/asai/ccaudio_rss_transcribed_array")
+    ap.add_argument(
+        "--cc_root",
+        type=str,
+        default="/groups/gcg51557/experiments/0167_cc_audio/asai/ccaudio_rss_transcribed_array",
+    )
     ap.add_argument("--slice_idx", type=int, required=True, help="0..99")
-    ap.add_argument("--output_dir", type=str, required=True,
-                    help="Directory to write shard-{slice_idx:05d}.parquet")
+    ap.add_argument(
+        "--output_dir",
+        type=str,
+        required=True,
+        help="Directory to write shard-{slice_idx:05d}.parquet",
+    )
     ap.add_argument("--audio_tokenizer_repo", default="kyutai/moshiko-pytorch-bf16")
-    ap.add_argument("--audio_tokenizer_name", default="tokenizer-e351c8d8-checkpoint125.safetensors")
+    ap.add_argument(
+        "--audio_tokenizer_name", default="tokenizer-e351c8d8-checkpoint125.safetensors"
+    )
     ap.add_argument("--text_tokenizer_repo", default="rinna/japanese-gpt2-medium")
     ap.add_argument("--text_tokenizer_name", default="spiece.model")
     ap.add_argument("--audio_chunk_size_s", type=int, default=30)
-    ap.add_argument("--num_codebooks", type=int, default=16,
-                    help="Mimi quantizer codebook count (q16 to match J-CHAT/Reazon).")
+    ap.add_argument(
+        "--num_codebooks",
+        type=int,
+        default=16,
+        help="Mimi quantizer codebook count (q16 to match J-CHAT/Reazon).",
+    )
     ap.add_argument("--text_padding_id", type=int, default=3)
     ap.add_argument("--end_of_text_padding_id", type=int, default=0)
-    ap.add_argument("--rep_ratio_thresh", type=float, default=0.05,
-                    help="Drop cut if (max 4-gram count) / text_length exceeds this.")
-    ap.add_argument("--non_ja_thresh", type=float, default=0.10,
-                    help="Drop cut if non-Japanese non-ascii char ratio exceeds this.")
+    ap.add_argument(
+        "--rep_ratio_thresh",
+        type=float,
+        default=0.05,
+        help="Drop cut if (max 4-gram count) / text_length exceeds this.",
+    )
+    ap.add_argument(
+        "--non_ja_thresh",
+        type=float,
+        default=0.10,
+        help="Drop cut if non-Japanese non-ascii char ratio exceeds this.",
+    )
     ap.add_argument("--overwrite", action="store_true")
     args = ap.parse_args()
     main(args)

@@ -56,12 +56,13 @@ def main(args: argparse.Namespace) -> None:
         sf.write(out, wav.astype(np.float32), samplerate=mimi.sample_rate)
 
         text_ids = [
-            x for x in row["A_text"]
-            if x not in _DROP_IDS and 0 <= x < text_tok.vocab_size()
+            x for x in row["A_text"] if x not in _DROP_IDS and 0 <= x < text_tok.vocab_size()
         ]
         txt = text_tok.decode(text_ids)
-        print(f"  {args.prefix}_{i:02d}  key={row['__key__']}  "
-              f"{wav.shape[0] / mimi.sample_rate:.1f}s  text={txt[:90]}")
+        print(
+            f"  {args.prefix}_{i:02d}  key={row['__key__']}  "
+            f"{wav.shape[0] / mimi.sample_rate:.1f}s  text={txt[:90]}"
+        )
 
 
 if __name__ == "__main__":
@@ -74,6 +75,7 @@ if __name__ == "__main__":
     ap.add_argument("--text_tokenizer_repo", default="rinna/japanese-gpt2-medium")
     ap.add_argument("--text_tokenizer_name", default="spiece.model")
     ap.add_argument("--audio_tokenizer_repo", default="kyutai/moshiko-pytorch-bf16")
-    ap.add_argument("--audio_tokenizer_name",
-                    default="tokenizer-e351c8d8-checkpoint125.safetensors")
+    ap.add_argument(
+        "--audio_tokenizer_name", default="tokenizer-e351c8d8-checkpoint125.safetensors"
+    )
     main(ap.parse_args())
