@@ -36,7 +36,7 @@ NODES = [
     ("ReazonSpeech — CC-BY-4.0", "src", C_OK),  # 2
     ("J-CHAT — commercial OK", "src", C_OK),  # 3
     ("LaboroTV — NC ⚠", "src", C_NC),  # 4
-    ("Zoom1 (LLM-jp) — commercial OK", "src", C_OK),  # 5
+    ("Zoom1 (LLM-jp) — 935h train (CC-BY+LLM-jp)", "src", C_OK),  # 5
     ("VisualBank — 300h", "src", C_UNK),  # 6
     ("ccaudio raw_all — 23,685h (CC)", "src", C_OK),  # 7
     ("JMultiWOZ — 7,469 chunks (CC-BY-SA)", "src", C_OK),  # 8
@@ -116,15 +116,15 @@ EDGES = [
     ("moshiko", "v0a", 1, "base", C_BASE),
     ("jchat", "v0a", 50, "J-CHAT 1shard", C_OK),
     ("mstts0178", "v0b", 1100, "init ckpt", C_NC),
-    ("zoom1", "v0b", 100, "Zoom1 +500", C_OK),
+    ("zoom1", "v0b", 935, "Zoom1 +500", C_OK),
     ("v0b", "v0c", 1200, "v0b ckpt", C_NC),
-    ("zoom1", "v0c", 100, "Zoom1 +1500", C_OK),
+    ("zoom1", "v0c", 935, "Zoom1 +1500", C_OK),
     # === v0d (failed): moshika + Reazon + J-CHAT + ccaudio v1 → mstts → Zoom1 ===
     ("moshika", "v0d", 1, "base", C_BASE),
     ("reazon", "v0d", 300, "Stage 1", C_OK),
     ("jchat", "v0d", 300, "Stage 1/2", C_OK),
     ("cc_raw", "v0d", 6613, "ccaudio v1 transcribed (broken filter)", C_OK),
-    ("zoom1", "v0d", 100, "Stage 3", C_OK),
+    ("zoom1", "v0d", 935, "Stage 3", C_OK),
     # === ccaudio v2 reprocess (CURRENT WORK) ===
     ("cc_raw", "cc_v2", 23685, "raw → VAD re-seg + re-ASR (filter ~9.4% kept)", C_OK),
     # === v0d_v2 (planned) ===
@@ -132,7 +132,7 @@ EDGES = [
     ("reazon", "v0d_v2", 300, "Stage 1", C_OK),
     ("jchat", "v0d_v2", 300, "Stage 1/2", C_OK),
     ("cc_v2", "v0d_v2", 2232, "ccaudio v2 (2,232h)", C_OK),
-    ("zoom1", "v0d_v2", 100, "Stage 3", C_OK),
+    ("zoom1", "v0d_v2", 935, "Stage 3", C_OK),
     # === mstts text inputs → synth corpus generation ===
     ("jmw", "mstts_text", 60, "~60h text chunks", C_OK),
     ("rpc", "mstts_text", 320, "~320h text chunks", C_OK),
@@ -142,16 +142,16 @@ EDGES = [
     # === v1 line ===
     ("moshiko", "v1", 1, "base", C_BASE),
     ("jchat", "v1", 300, "Stage 1", C_OK),
-    ("zoom1", "v1", 100, "Stage 2", C_OK),
+    ("zoom1", "v1", 935, "Stage 2", C_OK),
     ("moshiko", "v1_1", 1, "base", C_BASE),
     ("reazon", "v1_1", 300, "+ReazonSpeech", C_OK),
     ("jchat", "v1_1", 300, "Stage 2", C_OK),
-    ("zoom1", "v1_1", 100, "Stage 3", C_OK),
+    ("zoom1", "v1_1", 935, "Stage 3", C_OK),
     ("moshiko", "v1_2", 1, "base", C_BASE),
     ("reazon", "v1_2", 300, "Stage 1", C_OK),
     ("jchat", "v1_2", 300, "Stage 2", C_OK),
     ("vb", "v1_2", 300, "+VisualBank", C_UNK),
-    ("zoom1", "v1_2", 100, "Stage 4", C_OK),
+    ("zoom1", "v1_2", 935, "Stage 4", C_OK),
     # === v1.3 (planned, needs commercial mstts) ===
     ("v0d_v2", "synth_commercial", 380, "v0d_v2 as synth engine", C_PLAN),
     ("mstts_text", "synth_commercial", 380, "same text inputs", C_OK),
@@ -160,11 +160,11 @@ EDGES = [
     ("jchat", "v1_3", 300, "Stage 2", C_OK),
     ("vb", "v1_3", 300, "Stage 3", C_UNK),
     ("synth_commercial", "v1_3", 530, "+commercial synth", C_PLAN),
-    ("zoom1", "v1_3", 100, "Stage 5", C_OK),
+    ("zoom1", "v1_3", 935, "Stage 5", C_OK),
     # === v1.1 ablation cluster (experimental, private) ===
     ("moshiko", "v1_ablation", 1, "base", C_BASE),
     ("jchat", "v1_ablation", 300, "J-CHAT", C_OK),
-    ("zoom1", "v1_ablation", 100, "Zoom1", C_OK),
+    ("zoom1", "v1_ablation", 935, "Zoom1", C_OK),
     ("vb", "v1_ablation", 100, "VB subsets", C_UNK),
     ("pseudo", "v1_ablation", 50, "神崎 synth", C_UNK),
 ]
