@@ -334,24 +334,24 @@ fig = go.Figure(
 # ---------------------------------------------------------------------------
 LEGEND_HTML = (
     "<span style='font-size:12px;color:#666'>"
-    "Legend (license):  "
-    "<span style='color:#3a8540'>■ commercial OK</span>  "
-    "<span style='color:#c64a3b'>■ NC ⚠</span>  "
-    "<span style='color:#cba135'>■ planned</span>  "
-    "<span style='color:#2f6fb7'>■ base ckpt</span>  "
-    "<span style='color:#888888'>■ other / undecided</span>"
+    "凡例 (ライセンス):  "
+    "<span style='color:#3a8540'>■ 商用可</span>  "
+    "<span style='color:#c64a3b'>■ 非商用 (NC) ⚠</span>  "
+    "<span style='color:#cba135'>■ 予定/未完成</span>  "
+    "<span style='color:#2f6fb7'>■ ベースモデル</span>  "
+    "<span style='color:#888888'>■ その他/未確認</span>"
     "</span>"
 )
 
 fig.update_layout(
     title={
         "text": (
-            "<b style='font-size:18px'>0162 LLM-jp-Moshi data flow</b>"
+            "<b style='font-size:18px'>LLM-jp-Moshi データフロー</b>"
             "<br><span style='font-size:12px;color:#444'>"
-            "Sources → Intermediates → Models. "
-            "<b>Edge width = √(audio hours)</b> so small flows stay visible alongside "
-            "J-CHAT (72k h). Hover any node or edge for exact numbers. "
-            "Snapshot: 2026-05-24."
+            "ソース → 中間生成物 → モデル。 "
+            "<b>edge 幅 = √(音声時間)</b> で圧縮表示（J-CHAT が 72k h で他を潰さないように）。"
+            "正確な数値は node / edge にホバーで表示。"
+            " (snapshot: 2026-05-24)"
             "</span><br>" + LEGEND_HTML
         ),
         "x": 0.5,
