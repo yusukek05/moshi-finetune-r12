@@ -41,10 +41,11 @@ def init_embedding_module(
 
 def main(args):
     moshi_lm_kwargs = deepcopy(loaders._lm_kwargs)
-    moshi_lm = loaders.get_moshi_lm(
-        hf_hub_download(args.moshi_lm_repo, args.moshi_lm_name),
-        device="cpu",
-    )
+    if args.moshi_lm_path:
+        weights_path = args.moshi_lm_path
+    else:
+        weights_path = hf_hub_download(args.moshi_lm_repo, args.moshi_lm_name)
+    moshi_lm = loaders.get_moshi_lm(weights_path, device="cpu")
     if args.init_text_embeddings:
         print("Initializing the text embedding modules...")
         if args.retain_text_token_ids:
@@ -91,6 +92,12 @@ if __name__ == "__main__":
         type=str,
         default="model.safetensors",
         help="Model name of the Moshi model",
+    )
+    parser.add_argument(
+        "--moshi_lm_path",
+        type=str,
+        default=None,
+        help="Local path to a Moshi weights file (skips hf_hub_download).",
     )
     parser.add_argument(
         "--model_dtype",
