@@ -1,14 +1,18 @@
 #!/bin/bash -l
-#PBS -P gcg51557
-#PBS -q R9920261000
-#PBS -v RTYPE=rt_HF
-#PBS -l select=1:ncpus=8:ngpus=1
+#PBS -P gca50130
+#PBS -q rt_HG
+#PBS -l select=1:ncpus=16:ngpus=1
 #PBS -l walltime=12:00:00
 #PBS -N 0162_ccaudio_rawall_retry
 #PBS -j oe
 
 # Retry tar shards that 1791625 array tasks killed at the 4h walltime.
-# Walltime bumped to 12h; everything else identical to the main script.
+# Walltime 12h on rt_HG (1 GPU + 16 CPU, 168h walltime cap), so single-tar
+# long-tail jobs always finish on the first try. Was R9920261000/rt_HF which
+# wasted 7/8 of the H200 node per task.
+#
+# Project: gca50130 (not gcg51557) because gcg51557 is out of points and
+# only its R9920261000 reserved queue is free; rt_HG needs a budgeted project.
 #
 # RETRY_LIST is one-idx-per-line at pbs/ccaudio_rawall_retry_idx.txt so we
 # can keep appending newly-discovered walltime kills without editing this
@@ -23,7 +27,11 @@ set -euxo pipefail
 echo "JOB_ID=$PBS_JOBID"
 cd "$PBS_O_WORKDIR"
 
-RETRY_LIST=pbs/ccaudio_rawall_retry_idx.txt
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
+
+# RETRY_LIST can be overridden at submit time, e.g.:
+#   qsub -v RETRY_LIST=pbs/ccaudio_rawall_retry_idx_held.txt -J 1-15 ...
+RETRY_LIST="${RETRY_LIST:-pbs/ccaudio_rawall_retry_idx.txt}"
 ARR_IDX="${PBS_ARRAY_INDEX:-1}"
 IDX=$(sed -n "${ARR_IDX}p" "$RETRY_LIST")
 [ -n "$IDX" ] || { echo "no retry idx at line $ARR_IDX of $RETRY_LIST"; exit 1; }
