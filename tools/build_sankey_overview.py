@@ -11,6 +11,7 @@ Output is self-contained HTML (Plotly bundled via CDN).
 from __future__ import annotations
 
 import argparse
+import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -26,46 +27,124 @@ C_PLAN = "#cba135"  # planned / not-yet-built
 C_BASE = "#2f6fb7"  # base model
 
 # ---------------------------------------------------------------------------
-# Node table: (label, group, color)
-# Group is informational only (used for column layout).
+# Node table: (short_label, hover_desc, group, color)
+# - short_label: rendered on diagram (kept compact)
+# - hover_desc: revealed on hover (full hours + license)
+# - group: column layout marker
 # ---------------------------------------------------------------------------
 NODES = [
     # SOURCES (raw corpora & base models)
-    ("Kyutai Moshiko (base) — CC-BY-4.0", "src", C_BASE),  # 0
-    ("Kyutai Moshika (base) — CC-BY-4.0", "src", C_BASE),  # 1
-    ("ReazonSpeech — 4,851h used (of 35k avail) / CC-BY-4.0", "src", C_OK),  # 2
-    ("J-CHAT — 72,053h mono / 57,466h podcast-mstts (commercial OK)", "src", C_OK),  # 3
-    ("LaboroTV — 6,614h / NC ⚠", "src", C_NC),  # 4
-    ("Zoom1 (LLM-jp) — 935h train / CC-BY+LLM-jp", "src", C_OK),  # 5
-    ("VisualBank — 307h", "src", C_UNK),  # 6
-    ("ccaudio raw_all — 23,685h / CC", "src", C_OK),  # 7
-    ("JMultiWOZ — 7,469 chunks (text, CC-BY-SA)", "src", C_OK),  # 8
-    ("RealPersonaChat — 38,797 chunks (text, CC-BY-SA)", "src", C_OK),  # 9
-    ("pseudo_dialog_kanzaki — private synth", "src", C_UNK),  # 10
+    ("Moshiko (base)", "Kyutai Moshiko — CC-BY-4.0 (base weights)", "src", C_BASE),  # 0
+    ("Moshika (base)", "Kyutai Moshika — CC-BY-4.0 (base weights)", "src", C_BASE),  # 1
+    (
+        "ReazonSpeech",
+        "ReazonSpeech: 4,851h used (of 35,413h available) — CC-BY-4.0",
+        "src",
+        C_OK,
+    ),  # 2
+    ("J-CHAT", "J-CHAT: 72,053h mono + 57,466h podcast (mstts) — commercial OK", "src", C_OK),  # 3
+    (
+        "LaboroTV ⚠NC",
+        "LaboroTVSpeech: 6,614h — NC ⚠ (non-commercial, the v0c NC source)",
+        "src",
+        C_NC,
+    ),  # 4
+    ("Zoom1", "Zoom1 (LLM-jp internal): 935h train + 99h test — CC-BY + LLM-jp", "src", C_OK),  # 5
+    ("VisualBank", "VisualBank: 307h", "src", C_UNK),  # 6
+    (
+        "ccaudio raw_all",
+        "ccaudio raw_all: 23,685h podcast tars (CC) — pre-VAD source",
+        "src",
+        C_OK,
+    ),  # 7
+    ("JMultiWOZ", "JMultiWOZ: 7,469 text dialogues (CC-BY-SA) — task-oriented", "src", C_OK),  # 8
+    (
+        "RealPersonaChat",
+        "RealPersonaChat: 38,797 text dialogues (CC-BY-SA) — casual chitchat",
+        "src",
+        C_OK,
+    ),  # 9
+    ("pseudo_kanzaki", "pseudo_dialog_kanzaki: private synth corpus (神崎氏)", "src", C_UNK),  # 10
     # INTERMEDIATES
-    ("0178 mono ckpt (moshika+Reazon+J-CHAT+LaboroTV)", "mid", C_NC),  # 11
-    ("0178 mstts ckpt (+J-CHAT multi-stream)", "mid", C_NC),  # 12
-    ("ccaudio v2 filtered — 2,232h kept (re-VAD+re-ASR)", "mid", C_OK),  # 13
-    ("mstts text inputs (JMultiWOZ + RPC merged)", "mid", C_OK),  # 14
-    ("mstts v0c synth wavs — 46,266 / 530h", "mid", C_NC),  # 15
-    ("mstts v0c synth → v1 parquet (357MB)", "mid", C_NC),  # 16
-    ("commercial mstts synth corpus (planned)", "mid", C_PLAN),  # 17
+    (
+        "0178 mono ckpt",
+        "0178 mono ckpt: moshika + Reazon + J-CHAT + LaboroTV (NC-tainted)",
+        "mid",
+        C_NC,
+    ),  # 11
+    (
+        "0178 mstts ckpt",
+        "0178 mstts ckpt: 0178 mono + J-CHAT podcast multi-stream",
+        "mid",
+        C_NC,
+    ),  # 12
+    (
+        "ccaudio v2 filtered",
+        "ccaudio v2 filtered: 2,232h kept after VAD re-seg + re-ASR (~9.4%)",
+        "mid",
+        C_OK,
+    ),  # 13
+    (
+        "mstts text inputs",
+        "mstts text inputs: JMultiWOZ + RPC merged (46,266 dialogues)",
+        "mid",
+        C_OK,
+    ),  # 14
+    ("v0c synth wavs", "mstts v0c synth wavs: 46,266 wavs / ~527h synth audio", "mid", C_NC),  # 15
+    (
+        "v0c synth → parquet",
+        "v0c synth → v1 parquet: 357MB (v1.x training input)",
+        "mid",
+        C_NC,
+    ),  # 16
+    (
+        "commercial synth (plan)",
+        "Commercial mstts synth corpus (planned, via v0d_v2)",
+        "mid",
+        C_PLAN,
+    ),  # 17
     # MODELS — v1 line
-    ("v1 (J-CHAT→Zoom1) — public", "model", C_OK),  # 18
-    ("v1.1 (+ReazonSpeech) — ckpt ready", "model", C_OK),  # 19
-    ("v1.2 (+VisualBank) — ckpt, MOS pending", "model", C_OK),  # 20
-    ("v1.3 (+commercial synth) — planned", "model", C_PLAN),  # 21
-    ("v1.1b/c/d/e — synth ablation (private)", "model", C_UNK),  # 22
+    ("v1 (public)", "v1: J-CHAT → Zoom1 (publicly released, llm-jp org)", "model", C_OK),  # 18
+    (
+        "v1.1 (ckpt)",
+        "v1.1: +ReazonSpeech, ckpt ready (HF private, pending public)",
+        "model",
+        C_OK,
+    ),  # 19
+    ("v1.2 (MOS pending)", "v1.2: +VisualBank, ckpt ready, MOS eval pending", "model", C_OK),  # 20
+    ("v1.3 (planned)", "v1.3: +commercial synth corpus (needs v0d_v2)", "model", C_PLAN),  # 21
+    (
+        "v1.1b-e (ablation)",
+        "v1.1b/c/d/e: synth ablation experiments (HF private)",
+        "model",
+        C_UNK,
+    ),  # 22
     # MODELS — mstts line
-    ("v0a (moshiko + J-CHAT 1shard) — toy", "model", C_UNK),  # 23
-    ("v0b (0178 mstts + Zoom1, +500)", "model", C_NC),  # 24
-    ("v0c (v0b + Zoom1, +1500) — production mstts", "model", C_NC),  # 25
-    ("v0d (LaboroTV-free attempt) — failed", "model", C_NC),  # 26
-    ("v0d_v2 (ccaudio v2 rebuild) — planned", "model", C_PLAN),  # 27
+    ("v0a (toy)", "v0a: moshiko + J-CHAT 1shard — toy test only (noisy)", "model", C_UNK),  # 23
+    ("v0b", "v0b: 0178 mstts + Zoom1 (+500 step, HF private)", "model", C_NC),  # 24
+    (
+        "v0c (prod mstts)",
+        "v0c: v0b + Zoom1 (+1500 step) — current production synth engine",
+        "model",
+        C_NC,
+    ),  # 25
+    (
+        "v0d ❌ failed",
+        "v0d: LaboroTV-free rebuild attempt — failed (CER 63.6% vs v0c 36.1%)",
+        "model",
+        C_NC,
+    ),  # 26
+    (
+        "v0d_v2 (planned)",
+        "v0d_v2: ccaudio v2 rebuild (in progress, planned production)",
+        "model",
+        C_PLAN,
+    ),  # 27
 ]
 
 LABELS = [n[0] for n in NODES]
-NODE_COLORS = [n[2] for n in NODES]
+HOVER = [n[1] for n in NODES]
+NODE_COLORS = [n[3] for n in NODES]
 
 # Symbolic name -> index lookup (for readability in EDGES below).
 IDX = {
@@ -175,11 +254,16 @@ EDGES = [
 # Resolve symbolic edges to numeric indices.
 src_idx = [IDX[e[0]] for e in EDGES]
 tgt_idx = [IDX[e[1]] for e in EDGES]
-val = [e[2] for e in EDGES]
+real_val = [e[2] for e in EDGES]  # true audio hours
 labels = [e[3] for e in EDGES]
 
+# Visual edge widths: sqrt scaling so tiny flows (300h VB) stay visible next
+# to giant ones (72k J-CHAT). Real hours go into customdata for hover.
+vis_val = [max(1.0, math.sqrt(v)) for v in real_val]
+custom = [[v] for v in real_val]  # plotly customdata expects 2D
 
-def _to_rgba(hex6: str, alpha: float = 0.45) -> str:
+
+def _to_rgba(hex6: str, alpha: float = 0.55) -> str:
     h = hex6.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
@@ -193,14 +277,14 @@ ecolors = [_to_rgba(e[4]) for e in EDGES]
 # Plotly Sankey honors x/y when arrangement="snap" or "fixed".
 # ---------------------------------------------------------------------------
 def _col_x(group: str) -> float:
-    return {"src": 0.01, "mid": 0.40, "model": 0.99}[group]
+    return {"src": 0.005, "mid": 0.42, "model": 0.995}[group]
 
 
-x_pos = [_col_x(n[1]) for n in NODES]
+x_pos = [_col_x(n[2]) for n in NODES]
 
 # y positions: spread within column
 per_col: dict[str, list[int]] = defaultdict(list)
-for i, (_lbl, grp, _c) in enumerate(NODES):
+for i, (_lbl, _hover, grp, _c) in enumerate(NODES):
     per_col[grp].append(i)
 y_pos: list[float] = [0.0] * len(NODES)
 for idxs in per_col.values():
@@ -218,42 +302,67 @@ fig = go.Figure(
             arrangement="snap",
             node={
                 "label": LABELS,
+                "customdata": HOVER,
                 "color": NODE_COLORS,
-                "pad": 14,
-                "thickness": 18,
-                "line": {"color": "#333", "width": 0.6},
+                "pad": 22,
+                "thickness": 22,
+                "line": {"color": "#222", "width": 0.8},
                 "x": x_pos,
                 "y": y_pos,
+                "hovertemplate": "<b>%{label}</b><br>%{customdata}<extra></extra>",
             },
             link={
                 "source": src_idx,
                 "target": tgt_idx,
-                "value": val,
+                "value": vis_val,
+                "customdata": custom,
                 "label": labels,
                 "color": ecolors,
-                "hovertemplate": "%{source.label} → %{target.label}<br>%{label}<br>weight: %{value}<extra></extra>",
+                "hovertemplate": (
+                    "<b>%{source.label} → %{target.label}</b><br>"
+                    "%{label}<br>"
+                    "actual: %{customdata[0]:,} h"
+                    "<extra></extra>"
+                ),
             },
         )
     ]
 )
 
+# ---------------------------------------------------------------------------
+# Legend (Plotly Sankey has no built-in legend; use HTML in title block).
+# ---------------------------------------------------------------------------
+LEGEND_HTML = (
+    "<span style='font-size:12px;color:#666'>"
+    "Legend (license):  "
+    "<span style='color:#3a8540'>■ commercial OK</span>  "
+    "<span style='color:#c64a3b'>■ NC ⚠</span>  "
+    "<span style='color:#cba135'>■ planned</span>  "
+    "<span style='color:#2f6fb7'>■ base ckpt</span>  "
+    "<span style='color:#888888'>■ other / undecided</span>"
+    "</span>"
+)
+
 fig.update_layout(
     title={
         "text": (
-            "<b>0162 LLM-jp-Moshi data flow</b>"
-            "<br><span style='font-size:13px'>Sources → Intermediates → Models. "
-            "Edge width = audio hours (linear; J-CHAT at 72k dwarfs everything "
-            "by design). Color = license (green=commercial OK, red=NC, "
-            "gold=planned, blue=base, gray=other). Hover for details. "
-            "Snapshot: 2026-05-24.</span>"
+            "<b style='font-size:18px'>0162 LLM-jp-Moshi data flow</b>"
+            "<br><span style='font-size:12px;color:#444'>"
+            "Sources → Intermediates → Models. "
+            "<b>Edge width = √(audio hours)</b> so small flows stay visible alongside "
+            "J-CHAT (72k h). Hover any node or edge for exact numbers. "
+            "Snapshot: 2026-05-24."
+            "</span><br>" + LEGEND_HTML
         ),
         "x": 0.5,
         "xanchor": "center",
+        "y": 0.97,
+        "yanchor": "top",
     },
-    font={"family": "Inter, -apple-system, system-ui, sans-serif", "size": 11},
+    font={"family": "Inter, -apple-system, system-ui, sans-serif", "size": 13},
     paper_bgcolor="#fafafa",
-    margin={"l": 10, "r": 10, "t": 80, "b": 20},
-    height=900,
+    margin={"l": 10, "r": 10, "t": 130, "b": 20},
+    height=1200,
 )
 
 
