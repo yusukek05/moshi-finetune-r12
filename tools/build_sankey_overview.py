@@ -361,9 +361,43 @@ fig.update_layout(
     },
     font={"family": "Inter, -apple-system, system-ui, sans-serif", "size": 13},
     paper_bgcolor="#fafafa",
-    margin={"l": 10, "r": 10, "t": 130, "b": 20},
+    margin={"l": 10, "r": 10, "t": 130, "b": 30},
     height=1200,
 )
+
+
+# HF Spaces serves index.html in a fixed iframe. The default Plotly HTML
+# wraps the chart in a div with a fixed pixel height — so anything taller
+# than the iframe gets cut off without a usable scrollbar. We emit our own
+# full-page HTML that pins the chart container to the viewport size and
+# lets the user scroll vertically when the chart is taller than the screen.
+_WRAPPER_HTML = """<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>LLM-jp-Moshi データフロー</title>
+  <style>
+    html, body {{ margin: 0; padding: 0; background: #fafafa; }}
+    body {{
+      min-height: 100vh;
+      overflow-y: auto;
+      font-family: Inter, -apple-system, system-ui, "Hiragino Sans",
+                   "Yu Gothic", "Noto Sans JP", sans-serif;
+    }}
+    .chart-wrap {{
+      width: 100%;
+      min-height: 1240px; /* chart height + a little slack */
+    }}
+    .plotly-graph-div {{ width: 100% !important; }}
+  </style>
+</head>
+<body>
+  <div class="chart-wrap">
+{fig_div}
+  </div>
+</body>
+</html>
+"""
 
 
 def main() -> None:
@@ -376,12 +410,12 @@ def main() -> None:
     args = ap.parse_args()
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    fig.write_html(
-        out,
+    fig_div = fig.to_html(
         include_plotlyjs="cdn",
-        full_html=True,
-        config={"displaylogo": False},
+        full_html=False,
+        config={"displaylogo": False, "responsive": True},
     )
+    out.write_text(_WRAPPER_HTML.format(fig_div=fig_div), encoding="utf-8")
     print(f"[done] wrote {out} ({out.stat().st_size / 1024:.1f} KB)")
 
 
