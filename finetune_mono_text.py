@@ -148,9 +148,19 @@ def main():
     postprocess_args(args)
     check_mono_args(args)
 
+    # Initialize the process group BEFORE Accelerator so the NCCL watchdog
+    # timeout is long enough to survive rank 0's first-time dataset cache
+    # build (eg. 587 ccaudio v2 shards). See mstts/finetune_ms_tts.py:53.
+    if args.use_deepspeed and args.launcher == "mpi":
+        import deepspeed
+        deepspeed.init_distributed(
+            dist_backend="nccl",
+            timeout=timedelta(seconds=7200),
+        )
+
     accelerator_kwargs = {
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
-        "kwargs_handlers": [InitProcessGroupKwargs(timeout=timedelta(seconds=3600))],
+        "kwargs_handlers": [InitProcessGroupKwargs(timeout=timedelta(seconds=7200))],
     }
 
     if args.with_tracking:

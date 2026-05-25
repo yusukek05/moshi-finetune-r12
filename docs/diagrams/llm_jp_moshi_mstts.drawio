@@ -1,0 +1,256 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36">
+  <diagram name="ページ1" id="PoQ-L3goIPksW77SvPtl">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-46" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-52" parent="1" style="whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="290" width="170" x="630" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-10" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-34" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="245" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-12" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-10" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 8, S] (main or other)" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Mimi Encoder&#xa;(24kHz wav → 12.5Hz, 8 codebooks)" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-4" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-60" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="260" y="75" as="sourcePoint" />
+            <mxPoint x="259.5" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-6" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="k64GLVVhW8o_nB6gDJsi-2" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="68.49999999999994" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-7" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-6" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="24000 Hz" vertex="1">
+          <mxGeometry relative="1" x="-0.1935" y="-2" as="geometry">
+            <mxPoint x="2" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-26" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-45" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="500" />
+              <mxPoint x="350" y="500" />
+            </Array>
+            <mxPoint x="260" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-27" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-26" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 4096, S]" vertex="1">
+          <mxGeometry relative="1" x="-0.0057" y="-2" as="geometry">
+            <mxPoint x="-40" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Temporal Transformer (≈ 7B params)&#xa;dim=4096, L=32, H=32&#xa;RoPE / causal / ctx=3000" vertex="1">
+          <mxGeometry height="80" width="160" x="180" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-77" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-56" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-78" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-77" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 17, 4096, S]" vertex="1">
+          <mxGeometry relative="1" x="0.2693" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Embedding layer (×17)&#xa;各 codebook/text を 4096-d に変換" vertex="1">
+          <mxGeometry height="30" width="120" x="200" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="(同じ Temporal Transformer&#xa;の text view)" vertex="1">
+          <mxGeometry height="60" width="120" x="650" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-18" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-16" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-20" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-18" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;span style=&quot;color: rgba(0, 0, 0, 0); font-family: monospace; font-size: 0px; text-align: start; background-color: rgb(236, 236, 236);&quot;&gt;%3CmxGraphModel%3E%3Croot%3E%3CmxCell%20id%3D%220%22%2F%3E%3CmxCell%20id%3D%221%22%20parent%3D%220%22%2F%3E%3CmxCell%20id%3D%222%22%20value%3D%22Helium%20embedding%20layer%22%20style%3D%22rounded%3D1%3BwhiteSpace%3Dwrap%3Bhtml%3D1%3B%22%20vertex%3D%221%22%20parent%3D%221%22%3E%3CmxGeometry%20x%3D%22100%22%20y%3D%22290%22%20width%3D%22120%22%20height%3D%2230%22%20as%3D%22geometry%22%2F%3E%3C%2FmxCell%3E%3C%2Froot%3E%3C%2FmxGraphModel%3E&lt;/span&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.0083" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-21" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-18" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 4096, S]" vertex="1">
+          <mxGeometry relative="1" x="0.0083" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Text embedding&#xa;vocab=32000 → 4096" vertex="1">
+          <mxGeometry height="30" width="120" x="650" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-23" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-17" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-22" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" value="Text input&#xa;(対話テキスト)" vertex="1">
+          <mxGeometry height="30" width="80" x="670" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-30" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-29" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-31" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-30" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 8, S] (main or other)" vertex="1">
+          <mxGeometry relative="1" x="-0.0429" y="-2" as="geometry">
+            <mxPoint x="24" y="-11" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Depth Transformer (Depformer)&#xa;dim=1024, L=6, dep_q=8&#xa;multi-linear / per-step weights" vertex="1">
+          <mxGeometry height="60" width="180" x="170" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-41" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-61" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="760.0000000000002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Mimi Decoder&#xa;(12.5Hz, 8 codebooks → 24kHz wav)" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-36" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-34">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="210" />
+              <mxPoint x="290" y="210" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-32" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" value="Main speaker&lt;br&gt;audio token (8 cb)" vertex="1">
+          <mxGeometry height="40" width="100" x="340" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-33" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" value="Next text token&lt;br&gt;(inner monologue)" vertex="1">
+          <mxGeometry height="40" width="110" x="445" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-35" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-38" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-35" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 17, S]" vertex="1">
+          <mxGeometry relative="1" x="0.299" as="geometry">
+            <mxPoint y="-3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-34" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Concat (17 ch)&#xa;1 text + 8 main + 8 other" vertex="1">
+          <mxGeometry height="30" width="120" x="200" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-37" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.897;entryY=-0.076;entryDx=0;entryDy=0;entryPerimeter=0;" target="k64GLVVhW8o_nB6gDJsi-34">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="220" />
+              <mxPoint x="308" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-43" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-42" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="710" y="410" as="sourcePoint" />
+            <mxPoint x="710" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-42" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Text tokenizer&#xa;(rinna_gpt2 SentencePiece)" vertex="1">
+          <mxGeometry height="30" width="120" x="650" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-47" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-25">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="570" />
+              <mxPoint x="290" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-48" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-47" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 1]" vertex="1">
+          <mxGeometry relative="1" x="-0.7109" y="1" as="geometry">
+            <mxPoint x="19" y="-4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-45" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Text head&#xa;(Linear 4096→32000) + softmax" vertex="1">
+          <mxGeometry height="30" width="120" x="290" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-49" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.994;entryY=0.446;entryDx=0;entryDy=0;entryPerimeter=0;" target="k64GLVVhW8o_nB6gDJsi-33">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="570" />
+              <mxPoint x="575" y="570" />
+              <mxPoint x="575" y="173" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-50" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.814;entryY=0.916;entryDx=0;entryDy=0;entryPerimeter=0;jumpStyle=gap;" target="k64GLVVhW8o_nB6gDJsi-32">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="650" />
+              <mxPoint x="421" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-53" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" value="(text 入力は学習時 teacher forcing、&#xa;推論時は Temporal が&#xa;text head から next token を生成)" vertex="1">
+          <mxGeometry height="90" width="160" x="610" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-54" connectable="0" parent="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 8, S] (main or other)" vertex="1">
+          <mxGeometry x="330" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-55" connectable="0" parent="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 1, S]" vertex="1">
+          <mxGeometry x="380" y="220" as="geometry">
+            <mxPoint x="-1" y="2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-79" edge="1" parent="1" source="k64GLVVhW8o_nB6gDJsi-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="k64GLVVhW8o_nB6gDJsi-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-80" connectable="0" parent="k64GLVVhW8o_nB6gDJsi-79" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="[B, 4096, S]" vertex="1">
+          <mxGeometry relative="1" x="-0.6263" as="geometry">
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-56" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Sum pooling&#xa;(17 → 1, dim=4096)" vertex="1">
+          <mxGeometry height="30" width="120" x="200" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-61" parent="1" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/png,iVBORw0KGgoAAAANSUhEUgAAAMUAAACUCAMAAAAUNB2QAAAAZlBMVEX///8AAAD7+/ve3t4bGxslJSXLy8tISEjW1tbl5eU0NDRYWFjOzs64uLg9PT3u7u5xcXGkpKSEhIReXl5nZ2e+vr6WlpZOTk709PSxsbGenp6rq6t4eHiQkJDFxcV+fn4sLCwPDw/WZM/YAAAC+ElEQVR4nO2bbZeqIBRGJ0gRTSkzJcte/v+fvIDMjM1o5a0mYT37A8tFejxbQwjp4wMAAAAAAAAAAAAAAAAAAAAAABxDbrbbHX93Fo/C2ew8S9+dxaMoixkspgEs3osMFbLddtciioMgiNpthy3mKnNYTAJYTAfXLegxz3NhLSQhxEmLUKU8p60FZ8FJl25aBNaCxqoMrUUUhgdnxudDFiJRZf3u7O7lqsVqfDyim9af82QLOtMhXpDndZ5tEcDiP5BccctCqH3kXeGIDkeGLGTDKvbIw4JIRU/9IcjihC+uWsh9nJ3uOzmNsyyj1uLXKeVS1R9HZi6FEPZRQcoqqeqe50aq4ma3LApVNnedMlJ7niNjsRBFlbCLO2Is8nESJoXSWuz1Veix2DzfYm4tuA60edhi/d1l9VjoFiFeapF9W5C0rstw0CIq63rX3/J6LMLVanWwLhuWVHvxRxYmUEOGLHaqnv0c6Yi8KNahtdBtjFiLoyqX1nmltqsxFvJXa03XRZELe53Mp4MWOpeyx0KHaMhW58J/PA5MCjtpLMg+iIPaWuTGQlBKufEfY0FyFejzjrQh6vbkhsU5jhnvseBqVzloUaqaRLYWKsSpot8WlardWos2hY4FWWWMHeVoi24KJgTRtzOxFrrLielvC7FkLEtl12LTNM3noF9fiLW1OOhctEXb69ywKM2Roy32HYtGbRfSWAjy1XH2WlRf3wtrYb7Xe3LFIjrpI19pwaMo4hcWOoWYj7bQgWi/BdVHHl5oQZpzcD6SroXuONl4i/IczJfkTRa5SeEJFiYELGABC1jAwleLv+j1/BiB+DEa9GNk7tOvJD9+sXaOHJ49SKc+ezBo0f3YlZkcL2bV7prhfIHFc2c4L3B3tvke3Jr5v47rb2FaYNGDH28np/im2Pm39u6toHB/NcvFyiLi6sqiFtdXebXAYjrAYjr4sULbj9XyXWAxHfywoL5YePBPN5n68K9DAAAAAAAAAAAAAAAAAAAAAAC4wj/vGKhn/8pUAgAAAABJRU5ErkJggg==;" value="" vertex="1">
+          <mxGeometry height="57.57" width="76.62" x="221.69" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-62" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" value="Other speaker audio&#xa;(input, 24 kHz wav)" vertex="1">
+          <mxGeometry height="30" width="110" x="300" y="58" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-63" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" value="Main speaker audio&#xa;(output, 24 kHz wav)" vertex="1">
+          <mxGeometry height="30" width="130" x="300" y="773.79" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-66" parent="1" style="text;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" value="Mimi codec: 24kHz wav → 12.5Hz の 8 codebook 列&#xa;(N_q=8、各 codebook は語彙 2048)&#xa;1 系列を ~1/100 に圧縮した離散表現。&#xa;mstts では main / other の 2 系列を別 Encoder で扱う。" vertex="1">
+          <mxGeometry height="90" width="132.5" x="27.5" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-68" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="k64GLVVhW8o_nB6gDJsi-60" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="260" y="75" as="sourcePoint" />
+            <mxPoint x="260" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-60" parent="1" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/png,iVBORw0KGgoAAAANSUhEUgAAAMUAAACUCAMAAAAUNB2QAAAAZlBMVEX///8AAAD7+/ve3t4bGxslJSXLy8tISEjW1tbl5eU0NDRYWFjOzs64uLg9PT3u7u5xcXGkpKSEhIReXl5nZ2e+vr6WlpZOTk709PSxsbGenp6rq6t4eHiQkJDFxcV+fn4sLCwPDw/WZM/YAAAC+ElEQVR4nO2bbZeqIBRGJ0gRTSkzJcte/v+fvIDMjM1o5a0mYT37A8tFejxbQwjp4wMAAAAAAAAAAAAAAAAAAAAAABxDbrbbHX93Fo/C2ew8S9+dxaMoixkspgEs3osMFbLddtciioMgiNpthy3mKnNYTAJYTAfXLegxz3NhLSQhxEmLUKU8p60FZ8FJl25aBNaCxqoMrUUUhgdnxudDFiJRZf3u7O7lqsVqfDyim9af82QLOtMhXpDndZ5tEcDiP5BccctCqH3kXeGIDkeGLGTDKvbIw4JIRU/9IcjihC+uWsh9nJ3uOzmNsyyj1uLXKeVS1R9HZi6FEPZRQcoqqeqe50aq4ma3LApVNnedMlJ7niNjsRBFlbCLO2Is8nESJoXSWuz1Veix2DzfYm4tuA60edhi/d1l9VjoFiFeapF9W5C0rstw0CIq63rX3/J6LMLVanWwLhuWVHvxRxYmUEOGLHaqnv0c6Yi8KNahtdBtjFiLoyqX1nmltqsxFvJXa03XRZELe53Mp4MWOpeyx0KHaMhW58J/PA5MCjtpLMg+iIPaWuTGQlBKufEfY0FyFejzjrQh6vbkhsU5jhnvseBqVzloUaqaRLYWKsSpot8WlardWos2hY4FWWWMHeVoi24KJgTRtzOxFrrLielvC7FkLEtl12LTNM3noF9fiLW1OOhctEXb69ywKM2Roy32HYtGbRfSWAjy1XH2WlRf3wtrYb7Xe3LFIjrpI19pwaMo4hcWOoWYj7bQgWi/BdVHHl5oQZpzcD6SroXuONl4i/IczJfkTRa5SeEJFiYELGABC1jAwleLv+j1/BiB+DEa9GNk7tOvJD9+sXaOHJ49SKc+ezBo0f3YlZkcL2bV7prhfIHFc2c4L3B3tvke3Jr5v47rb2FaYNGDH28np/im2Pm39u6toHB/NcvFyiLi6sqiFtdXebXAYjrAYjr4sULbj9XyXWAxHfywoL5YePBPN5n68K9DAAAAAAAAAAAAAAAAAAAAAAC4wj/vGKhn/8pUAgAAAABJRU5ErkJggg==;" value="" vertex="1">
+          <mxGeometry height="57.57" width="76.62" x="221.69" y="44.21" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-70" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="Other (8) + Main (8) audio + 次の text token (1)&#xa;= 17 ch / step を column 方向に concat。" vertex="1">
+          <mxGeometry height="40" width="132.5" x="27.5" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-75" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="17 個の離散トークンを各 channel 別の embedding 層で&#xa;4096 次元のベクトルに変換 → [B, 17, 4096, S]。" vertex="1">
+          <mxGeometry height="40" width="132.5" x="27.5" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-76" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="17 ch を要素ごとに足し合わせて [B, 4096, S] へ縮約。&#xa;このベクトルが Temporal Transformer の入力で、&#xa;Main/Other の直前発話と次に何を言うかの情報を内包する。" vertex="1">
+          <mxGeometry height="40" width="132.5" x="27.5" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-81" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="Temporal Transformer (約 7B、Llama 系)&#xa;[B, 4096, S] → [B, 4096, S]&#xa;&quot;何を言うか&quot; だけでなく &quot;どう言うか&quot; の情報も内包。" vertex="1">
+          <mxGeometry height="40" width="132.5" x="27.5" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-82" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="Text head が next text token を生成 (inner monologue)。&#xa;&quot;何を言うか&quot; を 4096-d から抽出する役。&#xa;発話の一貫性向上に寄与。" vertex="1">
+          <mxGeometry height="40" width="132.5" x="430" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-83" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="Depth Transformer (Depformer)&#xa;dim=1024, L=6, multi-linear, per-step weights、dep_q=8&#xa;Temporal 出力 4096-d + 既出 codebook を入力に、&#xa;Main speaker の 8 codebook を 1 step 内で自己回帰生成。&#xa;1 つ目は semantic、以降は音響細部 (粗→細)。" vertex="1">
+          <mxGeometry height="105" width="132.5" x="27.5" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="k64GLVVhW8o_nB6gDJsi-84" parent="1" style="text;align=left;verticalAlign=middle;rounded=0;fontSize=8;whiteSpace=wrap;" value="Main speaker audio token (8 cb @ 12.5Hz)&#xa;→ Mimi Decoder で 24kHz wav に復元。" vertex="1">
+          <mxGeometry height="40" width="132.5" x="27.5" y="710" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

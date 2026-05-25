@@ -61,7 +61,7 @@ export const NODES: NodeDef[] = [
   // ---- INTERMEDIATES ----
   { id: 'mono0178',     label: '0178 mono ckpt',          hover: '0178 mono ckpt: moshika + Reazon + J-CHAT + LaboroTV を pretrain（LaboroTV 由来で NC）', group: 'mid', license: 'nc', cats: ['mstts'] },
   { id: 'mstts0178',    label: '0178 mstts ckpt',         hover: '0178 mstts ckpt: 0178 mono + J-CHAT podcast multi-stream で Stage 2', group: 'mid', license: 'nc', cats: ['mstts'] },
-  { id: 'cc_v2',        label: 'ccaudio v2 filtered',     hover: 'ccaudio v2: 2,232 h（VAD 再分割 + 再 ASR で 9.4% 採用、長尺アライメント問題を解消）', group: 'mid', license: 'ok', cats: ['mstts', 'clean'] },
+  { id: 'cc_v2',        label: 'ccaudio v2 filtered',     hover: 'ccaudio v2: 2,462 h / 587 shard（VAD 再分割 + 再 ASR で約10%採用、長尺アライメント問題を解消）', group: 'mid', license: 'ok', cats: ['mstts', 'clean'] },
   { id: 'mstts_text',   label: 'mstts text inputs',       hover: 'mstts text inputs: JMultiWOZ + RPC を merge した 46,266 dialogues（合成エンジンへの入力）', group: 'mid', license: 'ok', cats: ['mstts', 'clean'] },
   { id: 'synth_wav',    label: 'v0c synth wavs',          hover: 'mstts v0c synth wavs: 46,266 wav / 527 h（合成済対話音声）', group: 'mid', license: 'nc', cats: ['mstts'] },
   { id: 'synth_parquet',label: 'v0c synth → parquet',     hover: 'v0c synth → v1 parquet: 357 MB（v1.x 追加学習用フォーマット）', group: 'mid', license: 'nc', cats: ['mstts'] },
@@ -106,7 +106,7 @@ export const EDGES: EdgeDef[] = [
   { source: 'reazon',  target: 'v0d_v2', hours: 4851,  label: 'Stage 1 mono', license: 'ok', cats: ['mstts', 'clean'] },
   { source: 'jchat',   target: 'v0d_v2', hours: 72053, label: 'Stage 1 J-CHAT-mono', license: 'ok', cats: ['mstts', 'clean'] },
   { source: 'jchat',   target: 'v0d_v2', hours: 57466, label: 'Stage 2 J-CHAT-podcast', license: 'ok', cats: ['mstts', 'clean'] },
-  { source: 'cc_v2',   target: 'v0d_v2', hours: 2232,  label: 'ccaudio v2 (2,232h)', license: 'ok', cats: ['mstts', 'clean'] },
+  { source: 'cc_v2',   target: 'v0d_v2', hours: 2462,  label: 'ccaudio v2 (2,462h)', license: 'ok', cats: ['mstts', 'clean'] },
   { source: 'zoom1',   target: 'v0d_v2', hours: 935,   label: 'Stage 3', license: 'ok', cats: ['mstts', 'clean'] },
   // === mstts text → synth ===
   { source: 'jmw',        target: 'mstts_text', hours: 85,  label: '7,469 chunks → ~85h synth', license: 'ok', cats: ['mstts', 'clean'] },
@@ -138,4 +138,4 @@ export const EDGES: EdgeDef[] = [
   { source: 'zoom1',            target: 'v1_3', hours: 935,  label: 'Stage 5 Zoom1', license: 'ok', cats: ['v1', 'clean'] },
 ]
 
-export const SNAPSHOT = '2026-05-24'
+export const SNAPSHOT = '2026-05-25'
