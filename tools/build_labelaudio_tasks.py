@@ -169,6 +169,9 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--swap-channels", action="store_true",
                     help="emit ch0=B, ch1=A (use only if corpus violates L=A/R=B)")
+    ap.add_argument("--base-url", default="",
+                    help="if set, also emit clip_urls.csv with one URL per clip "
+                         "(e.g. https://user.github.io/repo/ → index.html?clip=<base>)")
     args = ap.parse_args()
 
     tdir = args.asr_base / "transcripts"
@@ -259,6 +262,16 @@ def main() -> None:
     print(f"clips: {n_clips} | audio: {tot_min:.1f} min "
           f"| overlap: {tot_ov:.1f} s ({100*tot_ov/max(tot_min*60,1):.1f}% of audio) "
           f"| out: {args.out_dir}")
+
+    if args.base_url:
+        base = args.base_url.rstrip("/") + "/"
+        with (args.out_dir / "clip_urls.csv").open("w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["clip_id", "url"])
+            for r in manifest_rows:
+                cid = r["clip"][:-4]  # strip .wav
+                w.writerow([cid, f"{base}index.html?clip={cid}"])
+        print(f"clip_urls.csv written ({n_clips} URLs) under base {base}")
 
 
 if __name__ == "__main__":
