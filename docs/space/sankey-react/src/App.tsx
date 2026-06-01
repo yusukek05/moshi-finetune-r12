@@ -14,7 +14,9 @@ const FILTERS: { value: FilterValue; label: string }[] = [
 ]
 
 function App() {
-  const [filter, setFilter] = useState<FilterValue>('all')
+  // Default to "商用クリーンのみ" — first-time readers see the commercial-clean
+  // story (v1 public + planned mstts) without the NC v0c lineage cluttering it.
+  const [filter, setFilter] = useState<FilterValue>('clean')
   const [detail, setDetail] = useState<SelectedDetail | null>(null)
 
   return (
@@ -71,7 +73,7 @@ function App() {
       </main>
 
       <footer className="page-footer">
-        Snapshot: {SNAPSHOT} · データ系譜は abe@pcl.cs.waseda.ac.jp 管理 ·{' '}
+        Data snapshot: {SNAPSHOT} · データ系譜は abe@pcl.cs.waseda.ac.jp 管理 ·{' '}
         <a
           href="https://github.com/abePclWaseda/moshi-finetune"
           target="_blank"

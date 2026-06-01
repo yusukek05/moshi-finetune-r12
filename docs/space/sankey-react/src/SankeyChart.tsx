@@ -89,6 +89,51 @@ export function SankeyChart({ filter, onSelect }: SankeyChartProps) {
 
     return {
       backgroundColor: 'transparent',
+      // Column headers overlay the Sankey at the top so first-time readers
+      // immediately see what each vertical band represents.
+      graphic: {
+        elements: [
+          {
+            type: 'text',
+            left: '4%',
+            top: 4,
+            style: {
+              text: 'コーパス (source)',
+              fontSize: 11,
+              fontWeight: 600,
+              fill: '#666',
+              fontFamily:
+                'Inter, -apple-system, system-ui, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif',
+            },
+          },
+          {
+            type: 'text',
+            left: 'center',
+            top: 4,
+            style: {
+              text: '中間生成物 (intermediate)',
+              fontSize: 11,
+              fontWeight: 600,
+              fill: '#666',
+              fontFamily:
+                'Inter, -apple-system, system-ui, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif',
+            },
+          },
+          {
+            type: 'text',
+            right: 190,
+            top: 4,
+            style: {
+              text: 'モデル (model)',
+              fontSize: 11,
+              fontWeight: 600,
+              fill: '#666',
+              fontFamily:
+                'Inter, -apple-system, system-ui, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif',
+            },
+          },
+        ],
+      },
       tooltip: {
         trigger: 'item',
         backgroundColor: 'rgba(30,30,30,0.95)',
@@ -130,10 +175,14 @@ export function SankeyChart({ filter, onSelect }: SankeyChartProps) {
             fontFamily:
               'Inter, -apple-system, system-ui, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif',
           },
-          emphasis: { focus: 'adjacency' },
+          // No emphasis re-rendering on click: keep the layout static so the
+          // Sankey doesn't reflow / fade unrelated bands when a node is selected
+          // (the detail panel is the primary way to see related content).
+          emphasis: { disabled: true },
+          selectedMode: false,
           left: 10,
           right: 180,
-          top: 10,
+          top: 28, // leave room for column headers (graphic.elements above)
           bottom: 10,
         },
       ],
