@@ -55,3 +55,6 @@ model_init.log
 hostfile_mpi_*
 
 memo.md
+
+# Local scratch (upload logs, staging dirs)
+.tmp/
