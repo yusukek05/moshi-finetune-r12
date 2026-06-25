@@ -58,3 +58,11 @@ memo.md
 
 # Local scratch (upload logs, staging dirs)
 .tmp/
+
+# Cloudflare wrangler cache / account (build + auth artifacts)
+.wrangler/
+
+# spoken-QA pilot generated artifacts (keep the .py, drop the data)
+phase2_spokenqa/pilot_questions/
+phase2_spokenqa/*.parquet
+phase2_spokenqa/pilot_v1_answers.*
