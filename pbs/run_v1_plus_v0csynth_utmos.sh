@@ -3,16 +3,16 @@
 #PBS -q R9920261000
 #PBS -v RTYPE=rt_HF
 #PBS -l select=1:ncpus=8:ngpus=1
-#PBS -l walltime=01:00:00
+#PBS -l walltime=02:00:00
 #PBS -N 0162_v1plusv0csynth_utmos
 #PBS -j oe
 
-# Phase 2.2 — UTMOS audio quality eval on v1 vs v1+v0csynth Zoom1
-# continuation wavs (50 each). Per-channel L/R UTMOS (Moshi stereo: L=A R=B)
-# + overall mean, after peak normalization to 0.5 for fair comparison.
+# Phase 2.2 — UTMOS audio quality eval on v1 vs v1+v0csynth vs v1+cascadesynth
+# Zoom1 continuation wavs (50 each). Per-channel L/R UTMOS (Moshi stereo:
+# L=A R=B) + overall mean, after peak normalization to 0.5 for fair comparison.
 #
 # Prereq: pbs/run_v1_plus_v0csynth_eval.sh has produced
-#         output/v1_plus_v0csynth_eval/{v1,v1_plus_v0csynth}/generated_wavs/*.wav
+#         output/v1_plus_v0csynth_eval/{v1,v1_plus_v0csynth,v1_plus_cascadesynth}/generated_wavs/*.wav
 
 set -euxo pipefail
 echo "JOB_ID=$PBS_JOBID"
@@ -43,7 +43,8 @@ from scipy.signal import resample_poly
 
 ROOT = Path("output/v1_plus_v0csynth_eval")
 OUT_JSON = Path("/home/acg17145sv/projects/icassp-2027-mstts/results/utmos_v1_plus_v0csynth_eval.json")
-TAGS = ["v1", "v1_plus_v0csynth"]
+TAGS = ["v1", "v1_plus_v0csynth", "v1_plus_cascadesynth",
+        "v1_plus_v0csynth_zoom1", "v1_plus_cascadesynth_zoom1"]
 TARGET_PEAK = 0.5  # peak-normalize for fair UTMOS comparison
 
 def to_16k_mono(channel: np.ndarray, sr: int) -> np.ndarray:

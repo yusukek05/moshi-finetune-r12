@@ -7,20 +7,27 @@
 #PBS -N 0162_v1plusv0csynth_eval
 #PBS -j oe
 
-# Phase 2.2: Downstream eval — does v0c synth corpus continue-FT help on
-# spoken dialogue continuation? Compare baseline v1 (vanilla = source of HF
-# llm-jp-moshi-v1 release) vs v1_plus_v0csynth (this PBS's Phase 2.1 output)
-# on the SAME Zoom1 test parquet as the existing v1_lineage_eval pipeline.
+# Phase 2.2: Downstream eval — does synth corpus continue-FT (mstts v0c vs
+# cascade) help on spoken dialogue continuation? 5-way comparison:
 #
-#   (A) v1                = vanilla 1node_exp J-CHAT -> Zoom1 (HF v1 source, dep_q=16 fp32)
-#   (B) v1_plus_v0csynth  = v1 base + v0c mstts synth corpus FT (step_2757_fp32, dep_q=16)
+#   (A) v1                          = vanilla 1node_exp J-CHAT -> Zoom1 (HF v1 source, dep_q=16 fp32)
+#   (B) v1_plus_v0csynth            = v1 + v0c mstts synth corpus FT (step_2757_fp32, dep_q=16)
+#   (C) v1_plus_cascadesynth        = v1 + cascade synth corpus FT (step_2714_fp32, dep_q=16)
+#   (D) v1_plus_v0csynth_zoom1      = (B) + Zoom1 re-anchor FT 7ep (fp32 dir auto-detected)
+#   (E) v1_plus_cascadesynth_zoom1  = (C) + Zoom1 re-anchor FT 7ep (fp32 dir auto-detected)
+#
+# All tags use the SAME Zoom1 test parquet + same seed/hyperparams, so the
+# 50 prompts are byte-identical across tags. skip-if-exists per tag, so
+# re-running this only generates the missing tags. (D)/(E) are skipped with a
+# warning if their fp32 ckpt does not exist yet.
 #
 # We use the un-cleaned (dep_q=16) fp32 ckpt because generate.py /
 # moshi_for_generation.py assume n_q == dep_q. cleaned ckpts are only for
 # moshi.server / HF release.
 #
-# Output: output/v1_plus_v0csynth_eval/{v1,v1_plus_v0csynth}/generated_wavs/
-# Next:   qsub pbs/run_v1_plus_v0csynth_asr_cer.sh
+# Output: output/v1_plus_v0csynth_eval/{v1,v1_plus_v0csynth,v1_plus_cascadesynth}/generated_wavs/
+# Next:   qsub pbs/run_v1_plus_v0csynth_asr_cer.sh  (walks all subdirs)
+#         qsub pbs/run_v1_plus_v0csynth_utmos.sh    (3-way TAGS list)
 
 set -euxo pipefail
 echo "JOB_ID=$PBS_JOBID"
@@ -45,15 +52,27 @@ EVAL_DATA="processed_data/llmjp-zoom1/test-001-of-001.parquet"
 COMPARE_ROOT="output/v1_plus_v0csynth_eval"
 
 V1_DIR="output/moshi-finetuned_init_text_emb_train_ohashi_llmjp-zoom1_7epochs_1node_exp/step_9282_fp32"
-V1_PLUS_DIR="output/v1_plus_v0csynth/step_2757_fp32"
+V1_PLUS_V0CSYNTH_DIR="output/v1_plus_v0csynth/step_2757_fp32"
+V1_PLUS_CASCADESYNTH_DIR="output/v1_plus_cascadesynth/step_2714_fp32"
+# Zoom1 re-anchored runs: final step varies, pick the latest *_fp32 dir.
+V1_PLUS_V0CSYNTH_ZOOM1_DIR=$(ls -d output/v1_plus_v0csynth_zoom1/step_*_fp32 2>/dev/null | sort -t_ -k3 -n | tail -1 || true)
+V1_PLUS_CASCADESYNTH_ZOOM1_DIR=$(ls -d output/v1_plus_cascadesynth_zoom1/step_*_fp32 2>/dev/null | sort -t_ -k3 -n | tail -1 || true)
 
 for tag_dir in \
     "v1:${V1_DIR}" \
-    "v1_plus_v0csynth:${V1_PLUS_DIR}"
+    "v1_plus_v0csynth:${V1_PLUS_V0CSYNTH_DIR}" \
+    "v1_plus_cascadesynth:${V1_PLUS_CASCADESYNTH_DIR}" \
+    "v1_plus_v0csynth_zoom1:${V1_PLUS_V0CSYNTH_ZOOM1_DIR}" \
+    "v1_plus_cascadesynth_zoom1:${V1_PLUS_CASCADESYNTH_ZOOM1_DIR}"
 do
     TAG="${tag_dir%%:*}"
     MODEL_DIR="${tag_dir##*:}"
     OUT_DIR="${COMPARE_ROOT}/${TAG}"
+
+    if [ -z "${MODEL_DIR}" ] || [ ! -d "${MODEL_DIR}" ]; then
+        echo "WARN: no fp32 ckpt for ${TAG}, skipping."
+        continue
+    fi
 
     echo "===== ${TAG} ====="
     echo "model_dir=${MODEL_DIR}"
@@ -83,5 +102,6 @@ do
         --output_dir "${OUT_DIR}/generated_wavs"
 done
 
-echo "DONE: wavs under ${COMPARE_ROOT}/{v1,v1_plus_v0csynth}/generated_wavs/"
+echo "DONE: wavs under ${COMPARE_ROOT}/{v1,v1_plus_v0csynth,v1_plus_cascadesynth}/generated_wavs/"
 echo "Next: qsub pbs/run_v1_plus_v0csynth_asr_cer.sh"
+echo "      qsub pbs/run_v1_plus_v0csynth_utmos.sh"

@@ -1,0 +1,71 @@
+#!/bin/bash -l
+#PBS -P gcg51557
+#PBS -q R9920261000
+#PBS -v RTYPE=rt_HF
+#PBS -l select=1:ncpus=8:ngpus=8
+#PBS -l walltime=04:00:00
+#PBS -N 0162_prep_synth_dialogue
+#PBS -j oe
+#PBS -o logs/
+# 0386 合成ターン分離ステレオ(drop_full_pool_stereo, L=A/R=B) を v1.1 学習用 parquet に変換。
+#   1) 整列: GT台本 + 厳密ゼロ境界復元 + whisperx(ja)  -> data/synth_dialogue/{audio,text}
+#   2) Mimi audio tokenize (stereo->[8,T]x2)            -> tokenized_audio
+#   3) text tokenize (rinna spiece, JP no-whitespace)   -> tokenized_text
+#   4) prepare_dataset (merge)                          -> processed_data/synth_dialogue
+#   スモーク: qsub -v LIMIT=6 pbs/prep_synth_dialogue.pbs
+#   本番500 : qsub pbs/prep_synth_dialogue.pbs
+set -euxo pipefail
+echo "JOB_ID=$PBS_JOBID"
+cd "$PBS_O_WORKDIR"
+
+LIMIT="${LIMIT:-0}"
+NSHARD=8
+REPO0386=/groups/gcg51557/experiments/0386_dialogue_model
+WX="$REPO0386/.venv_whisperx/bin/python"
+STEREO="$REPO0386/output/dialogue_arena/drop_full_pool_stereo"
+SCRIPTS="$REPO0386/data/dialogue_scripts/gen"
+DS=data/synth_dialogue
+mkdir -p logs "$DS/audio" "$DS/text" "$DS/tokenized_audio" "$DS/tokenized_text" \
+         processed_data/synth_dialogue
+
+module purge
+module load cuda/12.6/12.6.1
+module load python/3.12/3.12.9
+export HF_HUB_OFFLINE=1   # ja align / Mimi / rinna spm は事前キャッシュ済み
+
+# ---- Stage 1: 整列 (whisperx venv, 8 GPU シャード) ----
+LIM_ARG=""; [ "$LIMIT" != "0" ] && LIM_ARG="--limit $LIMIT"
+for i in $(seq 0 $((NSHARD - 1))); do
+  CUDA_VISIBLE_DEVICES=$i "$WX" tools/synth_dialogue_to_text.py \
+      --stereo_dir "$STEREO" --scripts_dir "$SCRIPTS" \
+      --out_audio_dir "$DS/audio" --out_text_dir "$DS/text" \
+      --device cuda:0 --num_shards "$NSHARD" --shard_idx "$i" --skip_existing $LIM_ARG \
+      > "logs/align_sh${i}.out" 2>&1 &
+done
+wait
+echo "=== align done: $(ls $DS/text/*.json 2>/dev/null | wc -l) text / $(ls $DS/audio/*.wav 2>/dev/null | wc -l) audio ==="
+
+# ---- Stage 2-4: 0162 .venv (moshi/mimi) ----
+uv sync --python 3.12
+export VIRTUAL_ENV="$PWD/.venv"
+export PATH="$VIRTUAL_ENV/bin:$PATH"
+export NO_TORCH_COMPILE=1
+
+# Stage 2: Mimi audio tokenize (stereo L=A/R=B -> A,B 各 [8,T] @12.5Hz)
+uv run python -m tools.tokenize_audio_from_dir \
+    --audio_dir "$DS/audio" --output_dir "$DS/tokenized_audio" --num_workers "$NSHARD"
+
+# Stage 3: text tokenize (rinna spiece, 日本語=単語前空白なし)
+uv run python -m tools.tokenize_text_from_dir \
+    --word_transcript_dir "$DS/text" --output_dir "$DS/tokenized_text" \
+    --text_tokenizer_repo rinna/japanese-gpt2-medium --text_tokenizer_name spiece.model \
+    --text_padding_id 3 --end_of_text_padding_id 0 --no_whitespace_before_word \
+    --num_workers "$NSHARD"
+
+# Stage 4: merge text+audio -> parquet
+uv run python -m tools.prepare_dataset \
+    --tokenized_text_dir "$DS/tokenized_text" --tokenized_audio_dir "$DS/tokenized_audio" \
+    --output_prefix processed_data/synth_dialogue/synth_dialogue
+
+echo "=== DONE ==="
+ls -la processed_data/synth_dialogue/
