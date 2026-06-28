@@ -1,8 +1,9 @@
 #!/bin/bash -l
 #PBS -P gcg51557
-#PBS -q rt_HF
+#PBS -q R9920261000
+#PBS -v RTYPE=rt_HF
 #PBS -l select=1:ncpus=192:ngpus=8
-#PBS -l walltime=08:00:00
+#PBS -l walltime=12:00:00
 #PBS -N 0162_train_v1.1_zoom1_plus_synth
 #PBS -j oe
 
@@ -52,8 +53,21 @@ SYNTH_UPSAMPLE="${SYNTH_UPSAMPLE:-11}"   # 11≈20% / 21≈33% / 1≈2.3%
 SYNTH=""; for _ in $(seq 1 "$SYNTH_UPSAMPLE"); do SYNTH="$SYNTH $SYNTH_FILE"; done
 train_data="${ZOOM1}${SYNTH}"
 
-# ── 開始 ckpt (⚠ v1.1 の Zoom1 学習 base に合わせて書き換え) ────
-MODEL_DIR="output/v1.2_reazonspeech_jchat_visualbank/step_1389_fp32"
+# ── 開始 ckpt = v1.1 baseline と同一 (ReazonSpeech→J-CHAT 後, VB なし) ──
+#   参照 pbs/run_train_v1.2_zoom1.sh と同じ base。これで
+#     baseline = Zoom1 単独 (= 既評価の v1.1候補, 自己整合CER 0.62)
+#     exp      = Zoom1 + FireRed合成
+#   が同一 base からの apples-to-apples になる。
+#   ⚠ VB入り (_visualbank/step_1389) は lineage評価で CER 0.62→0.91 と悪化要因なので使わない。
+MODEL_DIR="output/v1.2_reazonspeech_jchat/step_8880_fp32"
+
+# ── walltime kill 対策: 最新 raw step_N があれば自動再開 (再投入だけで継続) ──
+RESUME_ARGS=()
+LATEST=$(ls -d output/v1.1_zoom1_plus_synthdialogue/step_* 2>/dev/null | grep -E 'step_[0-9]+$' | sort -t_ -k2 -n | tail -1 || true)
+if [ -n "$LATEST" ] && [ -f "$LATEST/latest" ]; then
+    echo "Resuming from $LATEST"
+    RESUME_ARGS=(--resume_from_checkpoint "$LATEST")
+fi
 
 mpirun \
   -n  ${WORLD_SIZE}            \
@@ -85,4 +99,5 @@ mpirun \
       --logging_steps 10 \
       --report_to wandb \
       --project_name v1.1_zoom1_plus_synthdialogue \
-      --save_steps 1000
+      --save_steps 1000 \
+      "${RESUME_ARGS[@]}"
