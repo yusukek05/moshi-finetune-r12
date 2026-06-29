@@ -27,6 +27,7 @@ from utils import (
     Batch,
     DataCollator,
     preprocess_function,
+    preprocess_function_with_system_prompt,
     set_mpi_env_vars,
 )
 
@@ -93,6 +94,25 @@ def setup_argparser(parser: argparse.ArgumentParser):
         "--model_user_stream",
         action="store_true",
         help="Whether to train the user's audio stream",
+    )
+    parser.add_argument(
+        "--system_prompt_conditioning",
+        action="store_true",
+        help=(
+            "PersonaPlex-style training: prepend a hybrid system prompt "
+            "([voice|text|delimiter]) to each dialogue and mask the loss over it. "
+            "Requires the parquet to carry per-example `prompt_text_ids` "
+            "(and optional `prompt_audio`)."
+        ),
+    )
+    parser.add_argument(
+        "--num_main_audio",
+        type=int,
+        default=8,
+        help=(
+            "Number of agent (main-speaker) audio codebooks the voice prompt occupies "
+            "when --system_prompt_conditioning is set (Mimi has 8)."
+        ),
     )
     parser.add_argument(
         "--max_length",
@@ -749,11 +769,24 @@ def main():
         + [moshi_lm.initial_token_id] * moshi_lm.num_audio_codebooks,
         "zero_token_id": moshi_lm.zero_token_id,
     }
+    # PersonaPlex-style hybrid system-prompt conditioning: select the prompt-aware
+    # preprocessor and pass the extra kwargs it needs. The prompt region's loss is
+    # masked by setting its labels to zero_token_id (== the loss ignore_index), so
+    # the training loop itself is unchanged.
+    map_function = preprocess_function
+    if args.system_prompt_conditioning:
+        map_function = preprocess_function_with_system_prompt
+        preprocessing_kwargs["num_main_audio"] = args.num_main_audio
+        preprocessing_kwargs["delimiter_text_id"] = moshi_lm.end_of_text_padding_id
+        logger.info(
+            "system_prompt_conditioning ON: using preprocess_function_with_system_prompt "
+            f"(num_main_audio={args.num_main_audio}, delimiter_id={moshi_lm.end_of_text_padding_id})"
+        )
     dataset_columns = train_dataset.column_names
     with accelerator.main_process_first():
         # only main process preprocesses the dataset, then others will use the resulted cache
         train_dataset = train_dataset.map(
-            preprocess_function,
+            map_function,
             remove_columns=dataset_columns,
             batched=True,
             num_proc=args.dataset_processing_workers,
@@ -762,7 +795,7 @@ def main():
         )
         if eval_dataset is not None:
             eval_dataset = eval_dataset.map(
-                preprocess_function,
+                map_function,
                 remove_columns=dataset_columns,
                 batched=True,
                 num_proc=args.dataset_processing_workers,
