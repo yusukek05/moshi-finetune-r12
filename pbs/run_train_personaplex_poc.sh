@@ -46,7 +46,7 @@ NNODES=$(wc -l < hostfile_mpi_personaplex_poc_$PBS_JOBID)
 WORLD_SIZE=$((GPUS_PER_NODE * NNODES))
 echo "WORLD_SIZE=${WORLD_SIZE}"
 
-OUT=output/personaplex_poc
+OUT="${OUT:-output/personaplex_poc}"
 MODEL_DIR="output/v1.2_reazonspeech_jchat_zoom1/step_9282_fp32"   # = v1.1 (final, dep_q=16)
 # persona-conditioned parquet (prompt_text_ids [+ prompt_audio]).
 # causal 版に差し替え推奨; bootstrap smoke は persona_poc/persona_synth*.parquet
@@ -84,7 +84,7 @@ mpirun \
       --model_user_stream \
       --max_length 2048 \
       --min_length 128 \
-      --num_train_epochs 3 \
+      --num_train_epochs "${EPOCHS:-3}" \
       --per_device_train_batch_size 1 \
       --gradient_accumulation_steps 2 \
       --num_warmup_steps 0 \

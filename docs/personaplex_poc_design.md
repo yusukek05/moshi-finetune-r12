@@ -251,3 +251,49 @@ FireRedTTS-2 合成→`build_persona_parquet.py --mode passthrough`)。これは
 ## 6. データ管理（合成）
 
 HF Datasets(private, 正本) + provenance card（生成元: LLM-jp-3 版 + FireRedTTS-2 版 + persona サンプラ seed + フィルタ）+ W&B Artifact（run↔dataset 版 lineage）。再生成スクリプトを git に残す。詳細 [[project_personaplex_direction]]。
+
+## 7. causal-path 実行結果 (2026-07-01/02) — v0 axis = formality
+
+実行した causal パイプライン（全て本リポジトリ + 0386 を流用、全ジョブ ABCI）:
+```
+mstts/data_prep/gen_persona_dialogues.py (LLM-jp-4-8b, style別few-shot)  → 台本JSON(+style/persona_json)
+  → 0386 scripts/infer_batch.py (FireRedTTS2, Apache-2.0, --stereo, voice=pool)  → L=A R=B 24kHz wav
+  → pbs/prep_synth_dialogue.pbs (STEREO/SCRIPTS/DS/OUTPREFIX を引数化; WhisperX整列→tokenize→merge)  → v1 parquet
+  → mstts/data_prep/build_persona_parquet.py --mode passthrough --persona-map-dir <台本dir>  → +prompt_text_ids +persona_json
+  → pbs/run_train_personaplex_poc.sh (OUT/EPOCHS 引数化)  → 学習
+  → pbs/run_personaplex_flip_eval.sh / run_personaplex_flip_sweep.sh  → held-out flip
+```
+
+### 生成の de-risk (Job 2000496/2002583)
+style別 few-shot 出し分け（polite=初対面/です・ます, casual=友達/タメ口）で LLM-jp-4-8b の
+**formality 書き分けは 100%**（smoke 40本; 本生成 1000本 = polite 500/100%, casual 500/96%）。
+既存 gen_dialogue_scripts.py が polite few-shot のみ→丁寧体に潰れていた問題を解消。
+
+### flip 検証 = teacher-forced 条件付き NLL (`persona_flip_eval.py`)
+matched vs swapped(反対 formality) prompt で agent text-track NLL 比較。
+**全トークン NLL は希釈**（文体は語尾トークンのみ）→ **marker 限定 NLL** を主指標にした（です/ます↔だ/じゃん の token id）。
+
+| 実験 | データ | held-out marker flip_acc (ALL / polite / casual) | 判定 |
+|---|---|---|---|
+| smoke ep15 (150step) | train160 | 48 / 40 / 55 | ~chance |
+| smoke ep50 (500step) | train160 | 42 / 30 / 55 | 過学習(held NLL 1.47→2.78) |
+| smoke ep50 **on train** | train160 | **82 / 71 / 94** (全96%) | **機構✅ prompt効いてる** |
+| full sweep step_100..250 | train800 | best step_250: **54 / 50 / 57** | まだ弱い |
+
+### 確定した結論
+- **機構は正しい**: 学習データ上では marker flip 82–96%（両方向・正しい向き）。prefix 配置・loss mask・前処理は正常。
+- **held-out 汎化は train800 でも未達**（marker ~50–54%）。原因は 3 つ:
+  1. **データ量不足**（160→800 でほぼ不変、7B には桁が足りない）。
+  2. **prompt が実質 2 種**（全 polite 同一文字列/全 casual 同一）→「prompt→文体の一般関数」でなく 2 トークン列を暗記。
+  3. **base v1.1 の強い polite prior**（Zoom1 由来）→ polite prompt は元々 polite で効果測定不能（flip 50%）。faint 信号は **casual 側のみ**(57%)。
+- **メトリクスの教訓**: 全トークン NLL は希釈で 60% 前後に見えるが marker では chance。**marker NLL（将来は生成ベース flip=classify_formality）を主指標にすべき**。
+
+### 次の選択肢（投資順に、未決）
+- **(B) prompt 多様化**（安価・高レバレッジ）: persona instruction を多言い回しで生成し 2点暗記を防ぐ。同 800 で再学習。
+- **(D) 生成ベース flip**: NLL は保守的。実生成→classify_formality。生成 harness 新規実装が要る。
+- **(A) 大幅増量**: 5,000–10,000 対話（~1–2日合成）。データ量仮説の本検証。
+- **(E) v0 を「機構実証済み + スケール要件を定量化」でクローズ**し修論の別章へ。
+
+### 運用メモ
+予約キュー R9920261000 が preempt 連発（exit 271）→ user 指示で spot `-q rt_HF` に切替（`qsub -q rt_HF -v RTYPE=rt_HF,...`）。
+生成/合成/parquet/学習/eval データは全て gitignore 下（`processed_data/`, `output/`, 0386 側）。使い捨て生成ログ `gen_persona_*.log` は commit しない。

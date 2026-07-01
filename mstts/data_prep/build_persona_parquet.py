@@ -50,11 +50,36 @@ from persona_schema import (  # noqa: E402
 )
 
 
+def _load_persona_map(map_dir):
+    """Build {script_stem: persona_dict} from a dir of generator script JSONs.
+
+    Each JSON (gen_persona_dialogues.py output) carries a "persona_json" string.
+    The stem (e.g. "polite_food_0003") matches basename(dialogue_id) in the
+    prep_synth_dialogue parquet, so we can attach the ground-truth persona that
+    was used to *generate* the dialogue (the causal passthrough label)."""
+    import glob
+    m = {}
+    for p in glob.glob(os.path.join(map_dir, "*.json")):
+        stem = os.path.splitext(os.path.basename(p))[0]
+        try:
+            d = json.load(open(p, encoding="utf-8"))
+        except Exception:
+            continue
+        pj = d.get("persona_json")
+        if pj:
+            m[stem] = json.loads(pj) if isinstance(pj, str) else pj
+    return m
+
+
 def build(args):
     sp = spm.SentencePieceProcessor(model_file=args.tokenizer)
     writer = None
     n_in = n_out = 0
+    n_unmatched = 0
     formality_counts = {"polite": 0, "casual": 0, "mixed": 0}
+    persona_map = _load_persona_map(args.persona_map_dir) if args.persona_map_dir else None
+    if persona_map is not None:
+        print(f"persona map : {len(persona_map)} entries from {args.persona_map_dir}")
 
     for path in args.input:
         pf = pq.ParquetFile(path)
@@ -74,8 +99,16 @@ def build(args):
                     formality_counts[formality] += 1
                     persona = Persona(formality=formality)
                 elif args.mode == "passthrough":
-                    pj = row.get(args.persona_json_col)
-                    persona = Persona(**json.loads(pj)) if pj else Persona()
+                    if persona_map is not None:
+                        key = os.path.basename(str(row["dialogue_id"]))
+                        pd = persona_map.get(key)
+                        if pd is None:
+                            n_unmatched += 1
+                            continue
+                        persona = Persona(**pd)
+                    else:
+                        pj = row.get(args.persona_json_col)
+                        persona = Persona(**json.loads(pj)) if pj else Persona()
                 else:
                     raise ValueError(args.mode)
 
@@ -107,6 +140,8 @@ def build(args):
         writer.close()
     print(f"input rows : {n_in}")
     print(f"output rows: {n_out} -> {args.output}")
+    if persona_map is not None:
+        print(f"unmatched  : {n_unmatched} (dialogue_id with no persona-map entry, skipped)")
     if args.mode == "bootstrap":
         print(f"formality  : {formality_counts}")
 
@@ -119,6 +154,9 @@ def main():
     ap.add_argument("--mode", choices=["bootstrap", "passthrough"], default="bootstrap")
     ap.add_argument("--persona-json-col", default="persona_json",
                     help="column holding a persona dict json (passthrough mode)")
+    ap.add_argument("--persona-map-dir", default=None,
+                    help="passthrough: dir of generator script JSONs; join persona by "
+                         "basename(dialogue_id)==script stem (causal corpus path)")
     ap.add_argument("--voice-prompt", action="store_true",
                     help="also emit prompt_audio from the agent's own audio")
     ap.add_argument("--voice-frames", type=int, default=50,

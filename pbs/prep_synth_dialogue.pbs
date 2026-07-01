@@ -22,11 +22,13 @@ LIMIT="${LIMIT:-0}"
 NSHARD=8
 REPO0386=/groups/gcg51557/experiments/0386_dialogue_model
 WX="$REPO0386/.venv_whisperx/bin/python"
-STEREO="$REPO0386/output/dialogue_arena/drop_full_pool_stereo"
-SCRIPTS="$REPO0386/data/dialogue_scripts/gen"
-DS=data/synth_dialogue
+# Overridable for the persona causal corpus (defaults = original firered_synth flow):
+STEREO="${STEREO:-$REPO0386/output/dialogue_arena/drop_full_pool_stereo}"
+SCRIPTS="${SCRIPTS:-$REPO0386/data/dialogue_scripts/gen}"
+DS="${DS:-data/synth_dialogue}"
+OUTPREFIX="${OUTPREFIX:-processed_data/synth_dialogue/synth_dialogue}"
 mkdir -p logs "$DS/audio" "$DS/text" "$DS/tokenized_audio" "$DS/tokenized_text" \
-         processed_data/synth_dialogue
+         "$(dirname "$OUTPREFIX")"
 
 module purge
 module load cuda/12.6/12.6.1
@@ -65,7 +67,7 @@ uv run python -m tools.tokenize_text_from_dir \
 # Stage 4: merge text+audio -> parquet
 uv run python -m tools.prepare_dataset \
     --tokenized_text_dir "$DS/tokenized_text" --tokenized_audio_dir "$DS/tokenized_audio" \
-    --output_prefix processed_data/synth_dialogue/synth_dialogue
+    --output_prefix "$OUTPREFIX"
 
 echo "=== DONE ==="
-ls -la processed_data/synth_dialogue/
+ls -la "$(dirname "$OUTPREFIX")"/
