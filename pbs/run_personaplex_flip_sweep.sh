@@ -6,6 +6,7 @@
 #PBS -l walltime=03:00:00
 #PBS -N 0162_personaplex_flip_sweep
 #PBS -j oe
+#PBS -o logs/
 #
 # Sweep flip eval across training checkpoints to find the best step (peak held-out
 # flip before overfit). Consolidates each step -> fp32, evals on held-out, then

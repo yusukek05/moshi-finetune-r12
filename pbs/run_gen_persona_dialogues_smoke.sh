@@ -6,6 +6,7 @@
 #PBS -l walltime=01:30:00
 #PBS -N 0162_gen_persona_smoke
 #PBS -j oe
+#PBS -o logs/
 #
 # De-risk smoke for the PersonaPlex causal-corpus path (Task #131).
 # Question this answers: does LLM-jp-4-8b actually write *tameguchi* (casual) JA

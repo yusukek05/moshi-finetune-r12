@@ -6,6 +6,7 @@
 #PBS -l walltime=03:00:00
 #PBS -N 0162_train_personaplex_poc
 #PBS -j oe
+#PBS -o logs/
 
 # PersonaPlex 型 prompt-control PoC (v0):
 #   v1.1 (= Reazon+J-CHAT -> Zoom1, step_9282_fp32) を base に、

@@ -6,6 +6,7 @@
 #PBS -l walltime=10:00:00
 #PBS -N 0162_firered_synth_persona
 #PBS -j oe
+#PBS -o logs/
 #
 # FireRedTTS2 synthesis of the persona-conditioned dialogue scripts (Task #131).
 # Reads gen_persona_dialogues.py output (0386 data/dialogue_scripts/persona_gen),

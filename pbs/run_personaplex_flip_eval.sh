@@ -6,6 +6,7 @@
 #PBS -l walltime=02:00:00
 #PBS -N 0162_personaplex_flip_eval
 #PBS -j oe
+#PBS -o logs/
 #
 # PersonaPlex flip verification (Task #131):
 #   1) consolidate the trained DeepSpeed ckpt -> fp32 (zero_to_fp32)

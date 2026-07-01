@@ -6,6 +6,7 @@
 #PBS -l walltime=04:00:00
 #PBS -N 0162_gen_persona_full
 #PBS -j oe
+#PBS -o logs/
 #
 # Full persona-conditioned dialogue text generation for the PersonaPlex PoC (Task #131).
 # De-risk smoke (Job 2000496) confirmed 100% formality separation, so scale up.
@@ -29,7 +30,7 @@ REPO0386=$ROOT0386/FireRedTTS2
 NPS="${NPS:-100}"
 OUT="${OUT:-$ROOT0386/data/dialogue_scripts/persona_gen}"
 GEN="$REPO0162/mstts/data_prep/gen_persona_dialogues.py"
-mkdir -p "$OUT"
+mkdir -p "$OUT" "$REPO0162/logs"
 
 module purge
 module load cuda/12.6/12.6.1
@@ -59,7 +60,7 @@ for c in "${combos[@]}"; do
   s="${c%%:*}"; t="${c##*:}"
   gpu=$(( i % NGPU ))
   seed=$(( 100 + i ))
-  log="$REPO0162/gen_persona_${s}_${t}.log"
+  log="$REPO0162/logs/gen_persona_${s}_${t}.log"
   echo "[launch] combo=$c gpu=$gpu seed=$seed -> $log"
   CUDA_VISIBLE_DEVICES=$gpu "$PY_BIN" "$GEN" \
       --out_dir "$OUT" --styles "$s" --topics "$t" \
