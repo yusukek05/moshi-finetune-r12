@@ -52,6 +52,7 @@ logs/
 0162_*.o*
 run_*.o[0-9]*
 model_init.log
+gen_persona_*.log
 hostfile_mpi_*
 
 memo.md
