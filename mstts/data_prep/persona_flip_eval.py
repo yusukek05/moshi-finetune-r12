@@ -38,7 +38,7 @@ sys.path.insert(0, os.path.join(REPO, "mstts", "data_prep"))
 
 from models.moshi_for_finetuning import MoshiForFinetuning  # noqa: E402
 from utils.data import preprocess_function_with_system_prompt, DataCollator  # noqa: E402
-from persona_schema import Persona, tokenize_prompt  # noqa: E402
+from persona_schema import Persona, formality_prompt, tokenize_prompt  # noqa: E402
 
 STYLES = ("polite", "casual")
 OPP = {"polite": "casual", "casual": "polite"}
@@ -103,10 +103,18 @@ def main():
     ap.add_argument("--max_length", type=int, default=2048)
     ap.add_argument("--min_length", type=int, default=128)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--paraphrase-idx", type=int, default=-1,
+                    help="if >=0, use this formality paraphrase (e.g. the held-out one) "
+                         "instead of the canonical prompt — tests prompt generalisation")
     args = ap.parse_args()
 
     sp = spm.SentencePieceProcessor(model_file=args.tokenizer)
-    prompts = {s: tokenize_prompt(Persona(formality=s).to_prompt(), sp) for s in STYLES}
+    if args.paraphrase_idx >= 0:
+        prompt_text = {s: formality_prompt(s, args.paraphrase_idx) for s in STYLES}
+    else:
+        prompt_text = {s: Persona(formality=s).to_prompt() for s in STYLES}
+    prompts = {s: tokenize_prompt(prompt_text[s], sp) for s in STYLES}
+    print("prompt_text:", prompt_text, flush=True)
     print("prompts:", {s: prompts[s] for s in STYLES}, flush=True)
 
     print(f"loading model from {args.model_dir}", flush=True)

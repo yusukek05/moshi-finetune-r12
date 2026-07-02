@@ -59,6 +59,37 @@ def classify_formality(text: str, margin: int = 2) -> str:
     return "mixed"
 
 
+# ---- prompt paraphrases (for prompt-diversity training) --------------------
+# The v0 PoC used a single fixed prompt string per formality, so the model could
+# memorise 2 token patterns instead of learning a "prompt -> style" function
+# (held-out flip stayed ~chance). Training on many *paraphrases* of the same
+# instruction, and evaluating on a HELD-OUT paraphrase, tests real generalisation.
+FORMALITY_PARAPHRASES: dict[str, list[str]] = {
+    "polite": [
+        "丁寧な話し方で話します。",
+        "敬語で丁寧に話します。",
+        "です・ます調で話します。",
+        "礼儀正しい口調で話します。",
+        "フォーマルな言葉づかいで話します。",
+        "ていねいな言葉づかいで応対します。",
+    ],
+    "casual": [
+        "くだけた話し方で話します。",
+        "タメ口で話します。",
+        "友達みたいに砕けて話します。",
+        "カジュアルな口調で話します。",
+        "敬語を使わずに話します。",
+        "フランクに話します。",
+    ],
+}
+
+
+def formality_prompt(formality: str, idx: int) -> str:
+    """Return the idx-th paraphrase for a formality (wraps modulo)."""
+    bank = FORMALITY_PARAPHRASES[formality]
+    return bank[idx % len(bank)]
+
+
 # ---- persona schema --------------------------------------------------------
 # Free-form text prompt (PersonaPlex uses free text). Fields below are the
 # control axes we serialize into the Japanese role prompt. For v0 we only

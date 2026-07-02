@@ -42,12 +42,25 @@ import pyarrow.parquet as pq
 import sentencepiece as spm
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hashlib  # noqa: E402
+
 from persona_schema import (  # noqa: E402
+    FORMALITY_PARAPHRASES,
     Persona,
     classify_formality,
     decode_text_track,
+    formality_prompt,
     tokenize_prompt,
 )
+
+
+def _paraphrase_for(dialogue_id: str, formality: str, holdout: int) -> str:
+    """Deterministically pick a paraphrase for this row, excluding the held-out
+    index (reserved for eval). Seeded by dialogue_id so runs are reproducible."""
+    n = len(FORMALITY_PARAPHRASES[formality])
+    choices = [i for i in range(n) if i != holdout]
+    h = int(hashlib.md5(str(dialogue_id).encode()).hexdigest(), 16)
+    return formality_prompt(formality, choices[h % len(choices)])
 
 
 def _load_persona_map(map_dir):
@@ -112,7 +125,11 @@ def build(args):
                 else:
                     raise ValueError(args.mode)
 
-                prompt = persona.to_prompt()
+                if args.paraphrase_holdout >= 0 and persona.formality in FORMALITY_PARAPHRASES:
+                    prompt = _paraphrase_for(row["dialogue_id"], persona.formality,
+                                             args.paraphrase_holdout)
+                else:
+                    prompt = persona.to_prompt()
                 prompt_ids = tokenize_prompt(prompt, sp)
                 if not prompt_ids:
                     continue
@@ -157,6 +174,10 @@ def main():
     ap.add_argument("--persona-map-dir", default=None,
                     help="passthrough: dir of generator script JSONs; join persona by "
                          "basename(dialogue_id)==script stem (causal corpus path)")
+    ap.add_argument("--paraphrase-holdout", type=int, default=-1,
+                    help="if >=0, tokenize a per-row RANDOM formality paraphrase "
+                         "(excluding this held-out index, reserved for eval) instead of "
+                         "the single canonical prompt. Trains prompt-diversity.")
     ap.add_argument("--voice-prompt", action="store_true",
                     help="also emit prompt_audio from the agent's own audio")
     ap.add_argument("--voice-frames", type=int, default=50,

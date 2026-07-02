@@ -23,6 +23,7 @@ cd "$PBS_O_WORKDIR"
 OUT="${OUT:-output/personaplex_poc_full}"
 HELDOUT="${HELDOUT:-processed_data/persona_poc/persona_full_heldout-001-of-001.parquet}"
 STEPS="${STEPS:-step_50 step_100 step_150 step_200 step_250}"
+PARAPHRASE_IDX="${PARAPHRASE_IDX:--1}"   # >=0 to eval with a held-out paraphrase
 BASE_KWARGS="${BASE_KWARGS:-output/v1.2_reazonspeech_jchat_zoom1/step_9282_fp32/moshi_lm_kwargs.json}"
 RINNA=/home/acg17145sv/.cache/huggingface/hub/models--rinna--japanese-gpt2-medium/snapshots/8ce2399c33e99013a593ea9389378fd86662b9c7/spiece.model
 
@@ -44,7 +45,8 @@ for STEP in $STEPS; do
   fi
   echo ">>> flip eval @ $STEP"
   uv run python mstts/data_prep/persona_flip_eval.py \
-      --model_dir "$FP32" --heldout "$HELDOUT" --tokenizer "$RINNA" || echo "eval failed @ $STEP"
+      --model_dir "$FP32" --heldout "$HELDOUT" --tokenizer "$RINNA" \
+      --paraphrase-idx "$PARAPHRASE_IDX" || echo "eval failed @ $STEP"
   # free disk: drop the consolidated fp32 (keep the raw DeepSpeed step for re-consolidation if needed)
   rm -rf "$FP32"
   echo "############ END $STEP ############"
