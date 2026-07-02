@@ -18,7 +18,10 @@ cd "$PBS_O_WORKDIR"; mkdir -p logs
 EVAL=/home/acg17145sv/projects/llm-jp-moshi-eval
 LIN=output/v1_lineage_eval
 OUTROOT=$EVAL/results/leaderboard
-MODELS="v1 v1.1_candidate v1.2_candidate v1.1_firered_synth all_staged"
+# MODELS overridable via `qsub -v ...,MODELS=a:b` (colon-separated; commas are taken by
+# qsub's own -v parser). Default = full 5-model lineage.
+MODELS="${MODELS:-v1 v1.1_candidate v1.2_candidate v1.1_firered_synth all_staged}"
+MODELS="$(echo "$MODELS" | tr ':,' '  ')"
 
 module purge
 module load cuda/12.6/12.6.1
