@@ -12,18 +12,36 @@ from sentencepiece import SentencePieceProcessor
 from tqdm import tqdm
 
 
-def decode_text(text_tokens: np.ndarray, tokenizer: SentencePieceProcessor) -> str:
+def decode_text(
+    text_tokens: np.ndarray,
+    tokenizer: SentencePieceProcessor,
+    text_padding_id: int = 3,
+    end_of_text_padding_id: int = 0,
+) -> str:
     """
-    Decode text tokens.
-    Args:
-        tokens (np.ndarray): Text tokens. Shape: (seq_len,)
-        tokenizer (SentencePieceProcessor): SentencePiece tokenizer.
-    Returns:
-        str: Decoded text.
-    """
+    Decode the inner-monologue text stream into a clean transcript.
 
-    text = tokenizer.decode(text_tokens.tolist())
-    return text
+    Drops the padding frames (``text_padding_id``) and the word-boundary
+    markers (``end_of_text_padding_id``) — inverse of
+    ``tools/tokenize_text_from_dir.py`` — then decodes the remaining
+    SentencePiece word-piece ids. Without this filtering, ids 3 and 0 would be
+    decoded as literal vocab pieces and corrupt the text.
+
+    Args:
+        text_tokens (np.ndarray): Text stream. Shape: (seq_len,)
+        tokenizer (SentencePieceProcessor): SentencePiece tokenizer (for the
+            v1/v1.1/v1.2 lineage this is rinna/japanese-gpt2-medium spiece.model).
+        text_padding_id (int): Padding id for no-token frames (rinna: 3).
+        end_of_text_padding_id (int): Word-boundary marker id (rinna: 0).
+    Returns:
+        str: Decoded transcript.
+    """
+    kept = [
+        int(t)
+        for t in text_tokens.tolist()
+        if int(t) != text_padding_id and int(t) != end_of_text_padding_id
+    ]
+    return tokenizer.decode(kept)
 
 
 def decode_audio(audio_tokens: np.ndarray, mimi: loaders.MimiModel) -> np.ndarray:
@@ -69,8 +87,8 @@ def decode_tokens(rank: int, list_of_tokens_path: list[str], args: argparse.Name
             each file should be `*.npy` file.
         args (argparse.Namespace): Arguments.
     """
-    # Load the text tokenizer
-    text_tokenizer = SentencePieceProcessor(  # noqa: F841
+    # Load the text tokenizer (only needed when also saving transcripts)
+    text_tokenizer = SentencePieceProcessor(
         hf_hub_download(args.text_tokenizer_repo, args.text_tokenizer_name)
     )
 
@@ -80,13 +98,15 @@ def decode_tokens(rank: int, list_of_tokens_path: list[str], args: argparse.Name
         device=torch.device("cuda", rank),
     )
 
+    if args.text_output_dir is not None:
+        os.makedirs(args.text_output_dir, exist_ok=True)
+
     for tokens_path in tqdm(list_of_tokens_path, desc=f"Rank {rank}"):
         tokens = np.load(tokens_path)  # (1+K, T)
 
-        text_tokens = tokens[0]  # noqa: F841
+        text_tokens = tokens[0]
         audio_tokens = tokens[1:]
 
-        # text = decode_text(text_tokens, text_tokenizer) # str
         audio = decode_audio(audio_tokens, mimi)  # (2, wav_len)
 
         output_wav_path = os.path.join(
@@ -94,6 +114,22 @@ def decode_tokens(rank: int, list_of_tokens_path: list[str], args: argparse.Name
         )
         # save the audio
         sf.write(output_wav_path, audio.astype(np.float32).T, samplerate=mimi.sample_rate)
+
+        # optionally save the noise-free inner-monologue transcript (for the
+        # text-based meaningfulness reward). Gated: off unless --text_output_dir.
+        if args.text_output_dir is not None:
+            text = decode_text(
+                text_tokens,
+                text_tokenizer,
+                text_padding_id=args.text_padding_id,
+                end_of_text_padding_id=args.end_of_text_padding_id,
+            )
+            text_path = os.path.join(
+                args.text_output_dir,
+                os.path.basename(tokens_path).replace(".npy", ".txt"),
+            )
+            with open(text_path, "w") as f:
+                f.write(text + "\n")
 
 
 def main(args):
@@ -130,7 +166,18 @@ if __name__ == "__main__":
         help="Directory containing the token files to decode. Each file should be `*.npy` file.",
     )
     parser.add_argument(
-        "--output_dir", type=str, required=True, help="Directory to save the decoded output"
+        "--output_dir", type=str, required=True, help="Directory to save the decoded audio (wav)"
+    )
+    parser.add_argument(
+        "--text_output_dir",
+        type=str,
+        default=None,
+        help=(
+            "If set, also decode the inner-monologue text stream and save one "
+            "<id>.txt transcript per example here (noise-free; for the text-based "
+            "meaningfulness reward). For the v1/v1.1/v1.2 lineage pass "
+            "--text_tokenizer_repo rinna/japanese-gpt2-medium --text_tokenizer_name spiece.model."
+        ),
     )
     parser.add_argument(
         "--text_tokenizer_repo",
@@ -143,6 +190,14 @@ if __name__ == "__main__":
         type=str,
         default="tokenizer_spm_32k_3.model",
         help="Model name of the text tokenizer.",
+    )
+    parser.add_argument(
+        "--text_padding_id", type=int, default=3,
+        help="Text-stream padding id to drop when decoding (rinna: 3).",
+    )
+    parser.add_argument(
+        "--end_of_text_padding_id", type=int, default=0,
+        help="Text-stream word-boundary marker id to drop when decoding (rinna: 0).",
     )
     parser.add_argument(
         "--audio_tokenizer_repo",
