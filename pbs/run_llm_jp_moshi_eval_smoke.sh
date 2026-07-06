@@ -26,8 +26,13 @@ module load cuda/12.6/12.6.1
 module load python/3.12/3.12.9
 export CUDA_VISIBLE_DEVICES=0
 
-EXTRAS="${EXTRAS:-}"          # e.g. "[utmos]" once utmos deps resolve on py3.12
-METRICS="${METRICS:-asr_cer,judge}"
+# PROFILE avoids commas in `qsub -v` (which splits on comma): core | full
+PROFILE="${PROFILE:-full}"
+if [ "$PROFILE" = "full" ]; then
+  EXTRAS="[utmos]"; METRICS="utmos,asr_cer,judge"
+else
+  EXTRAS=""; METRICS="asr_cer,judge"
+fi
 cd "$EVAL"
 uv venv --python 3.12 .venv 2>/dev/null || true
 export VIRTUAL_ENV="$EVAL/.venv"; export PATH="$VIRTUAL_ENV/bin:$PATH"

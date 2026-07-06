@@ -92,6 +92,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 5 \
       --report_to wandb \
-      --project_name personaplex_poc \
+      --project_name "$(basename "$OUT")" \
       --save_steps 50 \
       "${RESUME_ARGS[@]}"
