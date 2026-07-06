@@ -48,10 +48,16 @@ echo "WORLD_SIZE=${WORLD_SIZE} ( ${GPUS_PER_NODE}x${NNODES} )"
 # ── トレーニングデータ: Zoom1 + 合成(同一parquetをN回並べて upsample) ──
 # 同一パスの重複は load_dataset で行数ぶん効く(実測: 3x→1500行)。
 ZOOM1="processed_data/llmjp-zoom1/train-001-of-001.parquet"
-SYNTH_FILE="processed_data/synth_dialogue/synth_dialogue-001-of-001.parquet"
-SYNTH_UPSAMPLE="${SYNTH_UPSAMPLE:-11}"   # 11≈20% / 21≈33% / 1≈2.3%
+# SYNTH_FILE env-overridable. NOTE: the 100h diverse corpus (~3590 dialogues ≈ 3600 windows)
+# is already ~14.5% of zoom1 (21,198 windows) at upsample=1, so DON'T upsample it — instead
+# point SYNTH_FILE at a pre-subsampled parquet (…_5pct=1118 / …_10pct=2364 dialogues) built by
+# stratified nested sampling, and keep SYNTH_UPSAMPLE=1. (Old 500-dialogue corpus needed ×11.)
+SYNTH_FILE="${SYNTH_FILE:-processed_data/synth_dialogue/synth_dialogue-001-of-001.parquet}"
+SYNTH_UPSAMPLE="${SYNTH_UPSAMPLE:-11}"   # old-corpus default; for 100h pass SYNTH_UPSAMPLE=1
 SYNTH=""; for _ in $(seq 1 "$SYNTH_UPSAMPLE"); do SYNTH="$SYNTH $SYNTH_FILE"; done
 train_data="${ZOOM1}${SYNTH}"
+# 比率別に出力先を分ける (×3/×5 スイープが衝突しないように)
+OUT="${OUT:-output/v1.1_zoom1_plus_synth_x${SYNTH_UPSAMPLE}}"
 
 # ── 開始 ckpt = v1.1 baseline と同一 (ReazonSpeech→J-CHAT 後, VB なし) ──
 #   参照 pbs/run_train_v1.2_zoom1.sh と同じ base。これで
@@ -63,7 +69,7 @@ MODEL_DIR="output/v1.2_reazonspeech_jchat/step_8880_fp32"
 
 # ── walltime kill 対策: 最新 raw step_N があれば自動再開 (再投入だけで継続) ──
 RESUME_ARGS=()
-LATEST=$(ls -d output/v1.1_zoom1_plus_synthdialogue/step_* 2>/dev/null | grep -E 'step_[0-9]+$' | sort -t_ -k2 -n | tail -1 || true)
+LATEST=$(ls -d "$OUT"/step_* 2>/dev/null | grep -E 'step_[0-9]+$' | sort -t_ -k2 -n | tail -1 || true)
 if [ -n "$LATEST" ] && [ -f "$LATEST/latest" ]; then
     echo "Resuming from $LATEST"
     RESUME_ARGS=(--resume_from_checkpoint "$LATEST")
@@ -84,7 +90,7 @@ mpirun \
       --tempformer_learning_rate 2e-6 \
       --depformer_learning_rate 4e-6 \
       --deepspeed_config_file ds_configs/zero3-fp16-act_ckpt.json \
-      --output_dir  output/v1.1_zoom1_plus_synthdialogue \
+      --output_dir  "$OUT" \
       --train_data_files ${train_data} \
       --model_dir   ${MODEL_DIR} \
       --model_dtype bfloat16 \
@@ -98,6 +104,6 @@ mpirun \
       --activation_checkpointing \
       --logging_steps 10 \
       --report_to wandb \
-      --project_name v1.1_zoom1_plus_synthdialogue \
+      --project_name "$(basename "$OUT")" \
       --save_steps 1000 \
       "${RESUME_ARGS[@]}"
