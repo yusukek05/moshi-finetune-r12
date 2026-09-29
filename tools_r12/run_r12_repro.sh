@@ -12,7 +12,7 @@
 #   STAGE=2: 1段目fp32(BASEDIR)から lr 1e-6/2e-6・DATALOADER_SEED=2
 set -uxo pipefail
 cd "$PBS_O_WORKDIR"
-REPO=/groups/gcg51557/experiments/0378_spoken-dialogue-model/abe/moshi-finetune
+REPO="${REPO:-$(cd "$(dirname "$0")/.." && pwd)}"  # 既定=このリポ自身
 W=/groups/gcg51557/experiments/0378_spoken-dialogue-model/personaplex_4000h
 R=/groups/gcg51557/experiments/0378_spoken-dialogue-model/personaplex_role
 WRAP="${WRAP:-/groups/gcg51557/experiments/0378_spoken-dialogue-model/share_r12_repro/run_finetune_with_subgroup_timeout.py}"

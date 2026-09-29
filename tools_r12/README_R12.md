@@ -6,12 +6,13 @@ R12 = 「合成4000h(プロンプト付き) + zoom1冒頭(プロンプト付き)
 
 ## 中身
 
-- `run_r12_repro.sh` … PBSジョブ(rt_HF 1ノード8GPU)。BASE をパラメータ化済み
-- `prompt_conditioning.patch` … moshi-finetune へのプロンプト条件づけ実装(858行)。
-  適用先コミット= `BASE_COMMIT.txt` (abePclWaseda/moshi-finetune feature/multistream-tts)。
-  `git apply prompt_conditioning.patch` で当ててください
-- `run_finetune_with_subgroup_timeout.py` … NCCLサブグループtimeout延長ラッパー(北村さん作の複製)
-- `prefix_tokens.npz` … プロンプト前置の無音/サイン音トークン
+**このリポジトリ本体が、R12の学習で実際に走ったコードそのもの**です(プロンプト条件づけ実装
+= `utils/data.py` の `preprocess_function_with_system_prompt_v2` 系、適用済み。パッチ作業は不要)。
+
+- `tools_r12/run_r12_repro.sh` … PBSジョブ(rt_HF 1ノード8GPU)。BASE をパラメータ化済み
+- `tools_r12/run_finetune_with_subgroup_timeout.py` … NCCLサブグループtimeout延長ラッパー
+- prefix_tokens.npz … ABCI上: `/groups/gcg51557/experiments/0378_spoken-dialogue-model/share_r12_repro/prefix_tokens.npz`
+  (ジョブスクリプトはこのパスを既定参照)
 
 ## データ(グループ読取可・コピー不要)
 
@@ -26,11 +27,16 @@ max_length2048で冒頭163.84秒だけが学習に入る(分割しない。分�
 ## 実行
 
 ```bash
-# 準備: moshi-finetune を BASE_COMMIT にチェックアウトして patch 適用、uv sync で venv 作成
-qsub -v STAGE=1,BASE=<起点モデルのfp32dir>,OUTDIR=<出力先>,VENV=<venv> run_r12_repro.sh
-# 1段目完了後、zero_to_fp32 で統合してから:
-qsub -v STAGE=2,BASEDIR=<stage1のfp32>,OUTDIR=<同じ出力先>,VENV=<venv> run_r12_repro.sh
+git clone https://github.com/yusukek05/moshi-finetune-r12 && cd moshi-finetune-r12
+uv sync                       # venv 構築 (ログインノードで。計算ノードのuv runはvenvを壊すので不可)
+WRAP=$PWD/tools_r12/run_finetune_with_subgroup_timeout.py
+qsub -v STAGE=1,BASE=<起点モデルのfp32dir>,OUTDIR=<出力先>,VENV=$PWD/.venv,WRAP=$WRAP tools_r12/run_r12_repro.sh
+# 1段目完了後、fp32へ統合:
+#   .venv/bin/python -m tools.zero_to_fp32 <OUTDIR>/stage1/step_5963 <OUTDIR>/stage1/step_5963_fp32 #       --moshi_lm_kwargs_path <BASEのmoshi_lm_kwargs.json>
+qsub -v STAGE=2,BASEDIR=<stage1のfp32>,OUTDIR=<同じ出力先>,VENV=$PWD/.venv,WRAP=$WRAP tools_r12/run_r12_repro.sh
 ```
+
+注意: スクリプト内の REPO 変数(コード本体の場所)を自分の clone 先に変えること。
 
 - STAGE=1: lr 2e-6/4e-6, MOSHI_DATALOADER_SEED=1 / STAGE=2: lr半減, SEED=2 (各1エポック)
 - batch16(PD1×ACC2×8GPU)・warmup0・スケジューラ無し・fp16・lb512・max_length2048
