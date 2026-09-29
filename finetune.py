@@ -8,6 +8,7 @@ import os
 from datetime import timedelta
 
 import deepspeed
+import numpy as np
 import torch
 import torch.nn.functional as F  # noqa: N812
 from accelerate import Accelerator
@@ -24,10 +25,14 @@ from tqdm import tqdm
 
 from models.moshi_for_finetuning import MoshiForFinetuning
 from utils import (
+    AlternatingDatasetSampler,
     Batch,
     DataCollator,
+    DataCollatorWithTextBatch,
+    TextBatch,
     preprocess_function,
     preprocess_function_with_system_prompt,
+    preprocess_function_with_system_prompt_v2,
     set_mpi_env_vars,
 )
 
@@ -36,6 +41,28 @@ logger = get_logger(__name__)
 
 # Parsing input arguments
 def setup_argparser(parser: argparse.ArgumentParser):
+    # --- テキストのみバッチを混ぜる（全二重の学習に言語知識を足すため）------
+    # 音声データは TTS が費用の9割を占めるので、テキストなら同じ予算で
+    # 20倍のデータを作れる。テキストバッチは音声ストリームを持たず
+    # text_emb -> transformer -> text_linear だけを通るので、
+    # 2話者・user stream 有の学習にもそのまま混ぜられる。
+    parser.add_argument(
+        "--text_data_files", type=str, default=None,
+        help="テキストのみデータ。{'text': ...} を要素とする JSON。"
+             "指定しなければ従来どおり音声のみで学習する")
+    parser.add_argument(
+        "--text_tokenizer_file", type=str, default=None,
+        help="テキスト用 tokenizer（spm）。--text_data_files を使うときは必須。"
+             "音声側の parquet は既にトークン化済みなので finetune.py は"
+             "tokenizer を持たない。必ず学習データと同じ spm を渡すこと")
+    parser.add_argument(
+        "--allow_config_change", type=str, default=None,
+        help="再開時に前回と違ってよい設定をカンマ区切りで指定する。"
+             "既定では全設定の一致を要求する（中断からの再開を想定した検査）。"
+             "例: --allow_config_change text_batch_interval,num_train_epochs")
+    parser.add_argument(
+        "--text_batch_interval", type=int, default=6,
+        help="音声バッチ何本ごとにテキストバッチ1本を入れるか。6 で約15%%がテキスト")
     parser.add_argument(
         "--launcher",
         choices=["accelerate", "mpi"],
@@ -113,6 +140,32 @@ def setup_argparser(parser: argparse.ArgumentParser):
             "Number of agent (main-speaker) audio codebooks the voice prompt occupies "
             "when --system_prompt_conditioning is set (Mimi has 8)."
         ),
+    )
+    parser.add_argument(
+        "--paper_prefix",
+        action="store_true",
+        help="PersonaPlex 論文 Fig.1 準拠の prefix を使う: user 音声=440Hz サイン波 / "
+             "agent 音声=無音 / text prompt を区切りで両側から囲む / Pause 区間あり。"
+             "--prefix_tokens_npz と --prefix_delimiter_id を併用する。",
+    )
+    parser.add_argument(
+        "--prefix_tokens_npz",
+        type=str,
+        default=None,
+        help="silence/sine の定数トークン列 (npz, 各 (num_main_audio, N))。",
+    )
+    parser.add_argument(
+        "--prefix_delimiter_id",
+        type=int,
+        default=None,
+        help="text prompt を囲む区切りトークン id。既定の end_of_text_padding_id(0) は "
+             "本文にも高頻度で出現するため、未使用 id (rinna spiece の [SEP]=5 等) を推奨。",
+    )
+    parser.add_argument(
+        "--prefix_pause_frames",
+        type=int,
+        default=6,
+        help="voice/text prompt の前後に入れる Pause のフレーム数 (12.5fps)。",
     )
     parser.add_argument(
         "--max_length",
@@ -258,6 +311,30 @@ def setup_argparser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
+        "--text_prompt_mask",
+        choices=["on", "off"],
+        default="on",
+        help="テキストのみデータの先頭にある text prompt を損失からマスクするか。"
+             "on(既定): '<prompt>\\n---\\n<本文>' の prompt 部分を zero_token_id にして"
+             "損失から外す。音声側が system prompt をマスクしているのと同じ扱いになり、"
+             "テキストバッチも『プロンプトを読んで従う』訓練になる。"
+             "off: 2026-09-02 までの動作（prompt も普通の本文として予測させる）",
+    )
+    parser.add_argument(
+        "--text_prompt_sep",
+        type=str,
+        default="\n---\n",
+        help="テキストのみデータで prompt と本文を分ける区切り。out/textonly/ の形式に合わせた既定",
+    )
+    parser.add_argument(
+        "--text_block_mode",
+        choices=["per_dialogue", "concat"],
+        default="per_dialogue",
+        help="テキストのみデータのブロック化の仕方。"
+             "per_dialogue(既定): 1対話=1ブロック。concat: 全対話を連結して max_length で切る"
+             "（2026-09-02 まではこちらだった。下記 group_text のコメント参照）",
+    )
+    parser.add_argument(
         "--parameters_to_finetune",
         choices=["all", "tempformer", "depformer", "text_embedding"],
         default="all",
@@ -336,10 +413,18 @@ def postprocess_args(args: argparse.Namespace):
         assert os.path.exists(resume_config_path), f"Config file not found: {resume_config_path}"
         prev_config = json.load(open(resume_config_path))
         # check consistency of the config
+        # 中断からの再開では設定が同一であるべきなので、既定では厳格に検査する。
+        # ただし「テキスト混合の比率を段階的に下げる」ような、設定を意図的に
+        # 変えながら継続したい場合があるので、その差分だけを明示的に許す。
         different_keys = ["output_dir", "max_train_steps", "resume_from_checkpoint"]
+        different_keys += [k.strip() for k in (args.allow_config_change or "").split(",") if k.strip()]
         missmatch_args = []
         for key, value in vars(args).items():
             if key in different_keys:
+                continue
+            if key not in prev_config:
+                # 引数が後から追加された場合、古い config には存在しない。
+                # 不一致ではなく「比較対象なし」として扱う（KeyError で落ちない）
                 continue
             if prev_config[key] != value:
                 missmatch_args.append(f"{key}: {prev_config[key]} != {value}")
@@ -578,6 +663,50 @@ def depformer_forward(
     return result
 
 
+def text_forward(
+    moshi_lm, batch: TextBatch
+) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    assert batch.input_ids.dim() == 2 and batch.labels.dim() == 2, (
+        "Text only batch should have shape (batch_size, seq_len)"
+    )
+    # Encode text
+    text_emb = moshi_lm.text_emb(batch.input_ids)
+
+    # Forward pass
+    tempformer_out = moshi_lm.transformer(text_emb, attention_mask=batch.text_attention_mask)
+    if moshi_lm.out_norm:
+        tempformer_out = moshi_lm.out_norm(tempformer_out)
+    text_logits = moshi_lm.text_linear(tempformer_out)
+
+    # Compute loss
+    text_logits = text_logits.float()
+    text_logits = text_logits[:, :-1].contiguous()
+    text_labels = batch.labels[:, 1:].contiguous()
+    text_losses = F.cross_entropy(
+        input=text_logits.view(-1, moshi_lm.text_card),
+        target=text_labels.view(-1),
+        ignore_index=moshi_lm.zero_token_id,
+        reduction="none",
+    ).view(text_labels.size())
+    assert text_labels.shape == text_losses.shape, f"{text_labels.shape} != {text_losses.shape}"
+
+    # Metrics
+    text_accuracy = (text_logits.argmax(-1) == text_labels).float()
+
+    non_pad_indices = (
+        (text_labels != moshi_lm.text_padding_token_id)
+        & (text_labels != moshi_lm.zero_token_id)  # zero token is ignored
+    )
+
+    loss = text_losses[non_pad_indices].mean()
+    accuracy = text_accuracy[non_pad_indices].mean()
+    log = {
+        "loss/text_batch": loss.detach(),
+        "accuracy/text_batch": accuracy.detach(),
+    }
+    return loss, log
+
+
 def forward(
     moshi_lm: MoshiForFinetuning,
     batch: Batch,
@@ -775,13 +904,32 @@ def main():
     # the training loop itself is unchanged.
     map_function = preprocess_function
     if args.system_prompt_conditioning:
-        map_function = preprocess_function_with_system_prompt
         preprocessing_kwargs["num_main_audio"] = args.num_main_audio
-        preprocessing_kwargs["delimiter_text_id"] = moshi_lm.end_of_text_padding_id
-        logger.info(
-            "system_prompt_conditioning ON: using preprocess_function_with_system_prompt "
-            f"(num_main_audio={args.num_main_audio}, delimiter_id={moshi_lm.end_of_text_padding_id})"
-        )
+        if args.paper_prefix:
+            assert args.prefix_tokens_npz, "--paper_prefix には --prefix_tokens_npz が必要"
+            import numpy as _np
+
+            _z = _np.load(args.prefix_tokens_npz)
+            delim = (args.prefix_delimiter_id
+                     if args.prefix_delimiter_id is not None
+                     else moshi_lm.end_of_text_padding_id)
+            map_function = preprocess_function_with_system_prompt_v2
+            preprocessing_kwargs["silence_codes"] = _z["silence"]
+            preprocessing_kwargs["sine_codes"] = _z["sine"]
+            preprocessing_kwargs["delimiter_text_id"] = delim
+            preprocessing_kwargs["pause_frames"] = args.prefix_pause_frames
+            logger.info(
+                "system_prompt_conditioning ON (paper_prefix): "
+                f"silence{_z['silence'].shape} sine{_z['sine'].shape} "
+                f"delimiter_id={delim} pause_frames={args.prefix_pause_frames}"
+            )
+        else:
+            map_function = preprocess_function_with_system_prompt
+            preprocessing_kwargs["delimiter_text_id"] = moshi_lm.end_of_text_padding_id
+            logger.info(
+                "system_prompt_conditioning ON: using preprocess_function_with_system_prompt "
+                f"(num_main_audio={args.num_main_audio}, delimiter_id={moshi_lm.end_of_text_padding_id})"
+            )
     dataset_columns = train_dataset.column_names
     with accelerator.main_process_first():
         # only main process preprocesses the dataset, then others will use the resulted cache
@@ -803,14 +951,127 @@ def main():
                 desc="Preprocessing validation dataset",
             )
 
-    data_collator = DataCollator(zero_token_id=moshi_lm.zero_token_id)
+    # --- テキストのみデータを混ぜる場合 ---------------------------------
+    text_dataset = None
+    if args.text_data_files is not None:
+        from itertools import chain
 
-    train_dataloader = DataLoader(
-        train_dataset,
-        batch_size=args.per_device_train_batch_size,
-        collate_fn=data_collator,
-        shuffle=True,
-    )
+        from datasets import concatenate_datasets
+        from sentencepiece import SentencePieceProcessor
+
+        if args.text_tokenizer_file is None:
+            raise ValueError(
+                "--text_data_files を使うときは --text_tokenizer_file が必須。"
+                "音声側 parquet を作ったときと同じ spm を渡す "
+                "（不一致だとテキストと音声で語彙がずれて学習が壊れる）")
+        tok_file = args.text_tokenizer_file
+        logger.info(f"テキスト用 tokenizer: {tok_file}")
+        text_tokenizer = SentencePieceProcessor(tok_file)
+        bos_id = moshi_lm.end_of_text_padding_id
+        with accelerator.main_process_first():
+            logger.info(f"テキストデータ: {args.text_data_files}")
+            text_dataset = load_dataset(
+                "json", split="train",
+                data_files={"train": args.text_data_files},
+                cache_dir=args.dataset_cache_dir,
+            )
+
+            # 音声側と同じ区切りトークンを prompt と本文の境目に置く
+            text_delim = (args.prefix_delimiter_id
+                          if args.prefix_delimiter_id is not None
+                          else moshi_lm.end_of_text_padding_id)
+
+            def tokenize_text_func(batched):
+                # 大文字は j-moshi-v1 の語彙に無いので小文字化する（音声側と同じ扱い）
+                streams, plens = [], []
+                for t in batched["text"]:
+                    t = t.lower()
+                    if args.text_prompt_mask == "on" and args.text_prompt_sep in t:
+                        head, body = t.split(args.text_prompt_sep, 1)
+                        h = text_tokenizer.encode(head)
+                        b = text_tokenizer.encode(body)
+                        # [bos] + prompt + [delim] + 本文。マスクするのは delim まで
+                        streams.append([bos_id] + h + [text_delim] + b)
+                        plens.append(1 + len(h) + 1)
+                    else:
+                        streams.append([bos_id] + text_tokenizer.encode(t))
+                        plens.append(0)
+                return {"text_stream": streams, "prompt_len": plens}
+
+            text_dataset = text_dataset.map(
+                tokenize_text_func, batched=True, num_proc=16,
+                remove_columns=text_dataset.column_names, desc="テキストをトークン化")
+
+            def group_text(batched):
+                """テキストのみデータを学習ブロックに切る。
+
+                **既定は per_dialogue（1対話=1ブロック）。** concat は 2026-09-02 まで
+                使っていた旧動作で、HuggingFace の因果LM学習例にある group_texts の
+                イディオムをそのまま持ってきたもの。あれは「雑多な文書を詰めて padding を
+                減らす」ための最適化で、**文書が混ざってよい前提**に立っている。
+
+                こちらのテキストは「話題行 → その話題の対話」という条件付きデータなので、
+                連結すると条件が壊れる。実測（対話1,000件 / max_length=2048）:
+                  - ブロックが対話の先頭から始まる率  **1/293 = 0.3%**
+                  - 分断された対話                    **999/1,000**
+                  - 1ブロックに詰まる対話数            中央値 3
+                さらに collator(DataCollatorWithTextBatch) の text_attention_mask は
+                **padding マスクだけで、対話境界でアテンションを遮断しない**。
+                つまり詰め込むと「無関係な別対話を文脈にして次を予測する」訓練になる。
+                docs/RESULTS.md §6 の「テキストのみ大量投入が効かなかった（実装バグ）」
+                「流暢だが話題行を参照しない」はこれで説明がつく。
+
+                padding の無駄を心配する必要はない。collator はバッチ内の最長に合わせて
+                padding するだけ（max_length に揃えるのではない）で、1対話は中央値594・
+                最大750トークンなので無駄は約21%にとどまる。音声側も 1対話=1行で
+                2048フレーム窓の占有26%なので、テキストだけ詰める理由がない。
+                """
+                if args.text_block_mode == "concat":
+                    # 連結するとどの位置が prompt か分からなくなるので prompt_len は 0
+                    flat = list(chain(*batched["text_stream"]))
+                    nb = -(-len(flat) // args.max_length)
+                    blocks = [b.tolist() for b in np.array_split(flat, nb)]
+                    return {"text_stream": blocks, "prompt_len": [0] * len(blocks)}
+                out, pl = [], []
+                for s_, n_ in zip(batched["text_stream"], batched["prompt_len"]):
+                    out.append(s_[: args.max_length])
+                    pl.append(min(n_, args.max_length))
+                return {"text_stream": out, "prompt_len": pl}
+
+            text_dataset = text_dataset.map(
+                group_text, batched=True, num_proc=16,
+                remove_columns=text_dataset.column_names, desc="ブロック化")
+        logger.info(f"テキストブロック {len(text_dataset)} 本 / "
+                    f"音声 {len(train_dataset)} 本 / "
+                    f"混合比 1:{args.text_batch_interval}")
+
+    if text_dataset is None:
+        data_collator = DataCollator(zero_token_id=moshi_lm.zero_token_id)
+        train_dataloader = DataLoader(
+            train_dataset,
+            batch_size=args.per_device_train_batch_size,
+            collate_fn=data_collator,
+            shuffle=True,
+        )
+    else:
+        data_collator = DataCollatorWithTextBatch(zero_token_id=moshi_lm.zero_token_id)
+        batch_sampler = AlternatingDatasetSampler(
+            base_dataset_indices=list(range(len(train_dataset))),
+            alt_dataset_indices=[i + len(train_dataset) for i in range(len(text_dataset))],
+            base_ratio=args.text_batch_interval,
+            batch_size=args.per_device_train_batch_size,
+            num_processes=accelerator.num_processes,
+            # --seed は既定 None。サンプラーは seed+epoch を計算するので
+            # None のままだと TypeError になる
+            seed=args.seed if args.seed is not None else 0,
+        )
+        train_dataset = concatenate_datasets([train_dataset, text_dataset])
+        train_dataloader = DataLoader(
+            train_dataset, batch_sampler=batch_sampler, collate_fn=data_collator)
+        # accelerator にバッチサイズを知らせる
+        train_dataloader._DataLoader__initialized = False
+        train_dataloader.batch_size = batch_sampler.batch_size
+        train_dataloader._DataLoader__initialized = True
     if eval_dataset is not None:
         eval_dataloader = DataLoader(
             eval_dataset,
@@ -872,6 +1133,13 @@ def main():
             warmup_num_steps=args.num_warmup_steps,
             total_num_steps=global_num_steps,
         )
+    elif lr_scheduler_type == "WarmupCosineLR":
+        # 論文 §4 の "Adam with cosine annealing" に対応。
+        lr_scheduler = DummyScheduler(
+            optimizer=optimizer,
+            warmup_num_steps=args.num_warmup_steps,
+            total_num_steps=global_num_steps,
+        )
     else:
         raise NotImplementedError(f"Unknown lr_scheduler_type: {lr_scheduler_type}")
 
@@ -923,7 +1191,7 @@ def main():
     )
     logger.info(f"  Total optimization steps = {local_num_steps}")
     if args.resume_from_checkpoint:
-        logger.info(f"  Resume from step {current_steps}")
+        logger.info(f"  Resume from step {current_steps} (starting_epoch={starting_epoch})")
 
     # Only show the progress bar once on each machine.
     pbar = tqdm(
@@ -939,15 +1207,29 @@ def main():
             # if accelerator.use_stateful_dataloader:
             #     active_dataloader = train_dataloader
             # else:
+            # 【2026-08-28 修正】剰余の法が誤っていた。左辺はバッチ数なので、法は
+            # local_num_steps_per_epoch(ステップ単位) ではなく その accum 倍でなければならない。
+            # 旧: (current_steps * accum) % local_num_steps_per_epoch
+            #   → エポック内オフセットが local_num_steps_per_epoch/accum 以上でスキップ量がずれ、
+            #     データの重複と欠落が起きる(accum=1 のときだけ偶然一致していた)。
+            # エポック境界では新旧どちらも 0 を返すため、正常経路の挙動は変わらない。
             num_batches_to_skip = (
-                current_steps * args.gradient_accumulation_steps  # steps -> batches
-            ) % local_num_steps_per_epoch
+                current_steps % local_num_steps_per_epoch
+            ) * args.gradient_accumulation_steps
             active_dataloader = accelerator.skip_first_batches(
                 train_dataloader, num_batches_to_skip
             )
         else:
             num_batches_to_skip = 0
             active_dataloader = train_dataloader
+        logger.info(f"  [epoch {epoch}] num_batches_to_skip={num_batches_to_skip} "
+                    f"(steps/epoch={local_num_steps_per_epoch}, accum={args.gradient_accumulation_steps})")
+
+        # NOTE: ここでサンプラーの set_epoch を呼ぶと、エポック境界で
+        # NCCL の集団通信がタイムアウトする（step 1309 で2回再現）。
+        # accelerator.prepare 後の dataloader はシャード化されており、
+        # 下位のサンプラーを実行中に触るとランク間で不整合になるためと見られる。
+        # 並びが毎エポック同じになる副作用は許容する（段1はこれで完走している）。
 
         logging_buffer = collections.defaultdict(list)
 
@@ -955,7 +1237,10 @@ def main():
             moshi_lm.train()
             batch = batch.to(accelerator.device)
             # Forward pass
-            total_loss, log = forward(moshi_lm=moshi_lm, batch=batch, args=args)
+            if isinstance(batch, TextBatch):
+                total_loss, log = text_forward(moshi_lm=moshi_lm, batch=batch)
+            else:
+                total_loss, log = forward(moshi_lm=moshi_lm, batch=batch, args=args)
             for key, value in log.items():
                 logging_buffer[f"training_{key}"].append(value)
             # Backward pass
@@ -983,8 +1268,11 @@ def main():
                         f"Steps: {current_steps}, "
                         f"LRs: {lrs}, "
                         f"Loss: {total_loss.item():.5f} "
-                        f"(text: {log['loss/text_total'].item():.5f}, "
-                        f"audio: {log['loss/audio_total'].item():.5f})"
+                        # テキストのみバッチには音声側のキーが無い（loss/text_batch だけ）
+                        + (f"(text: {log['loss/text_total'].item():.5f}, "
+                           f"audio: {log['loss/audio_total'].item():.5f})"
+                           if "loss/audio_total" in log
+                           else f"(text_batch: {log['loss/text_batch'].item():.5f})")
                     )
                     if args.with_tracking:
                         gathered_metrics = accelerator.gather(
@@ -1035,6 +1323,15 @@ def main():
                         accelerator.log(
                             {key: values.nanmean() for key, values in gathered_metrics.items()},
                             step=current_steps,
+                        )
+                        # 標準出力にも残す。wandb offline だと後から eval loss を取り出せず、
+                        # どの checkpoint を採用するか決められなかった (2026-08-20)。
+                        logger.info(
+                            f"Eval steps: {current_steps}, "
+                            + ", ".join(
+                                f"{k.replace('evaluation_', '')}: {v.nanmean():.5f}"
+                                for k, v in sorted(gathered_metrics.items())
+                            )
                         )
 
                 # Save checkpoint

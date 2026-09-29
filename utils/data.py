@@ -1,8 +1,10 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 import torch
+from torch.utils.data import BatchSampler
 
 
 def main_speaker_streams(
@@ -236,6 +238,83 @@ def build_system_prompt_prefix(
     return prefix
 
 
+# ---------------------------------------------------------------------------
+# PersonaPlex 論文 Fig.1 準拠の prefix ビルダー（0378 で追加）
+#
+# 論文 §3.1 と Fig.1 が示す構造を、既存実装との差分を明示して実装する:
+#   - user 音声は全区間 440Hz サイン波   (既存: 音声パディング)
+#   - agent 音声は「無音」               (既存: 音声パディング。パディングは
+#                                          mimi の無音符号とは別物)
+#   - text prompt を区切りトークンで両側から囲む (既存: 末尾に1個だけ)
+#   - voice/text prompt の前後に Pause 区間  (既存: なし)
+# 既存の build_system_prompt_prefix は残す（阿部さんの PoC 再現用）。
+# ---------------------------------------------------------------------------
+def build_system_prompt_prefix_v2(
+    role_text_ids: list[int],
+    voice_audio_codes: np.ndarray | None,
+    num_streams: int,
+    num_main_audio: int,
+    text_padding_token_id: int,
+    audio_padding_token_id: int,
+    silence_codes: np.ndarray,
+    sine_codes: np.ndarray,
+    delimiter_text_id: int,
+    pause_frames: int = 6,
+    dtype: np.dtype = np.int64,
+) -> np.ndarray:
+    """論文 Fig.1 の Hybrid System Prompt を作る。
+
+    レイアウト（列方向が時間）:
+        [voice prompt][pause][DELIM role_text DELIM][pause]
+      row 0                 : text   -> PAD / 区切り / role tokens
+      rows 1..1+num_main_audio: agent -> 話者サンプル or 無音
+      rows 1+num_main_audio..: user  -> 全区間 440Hz サイン波
+
+    silence_codes / sine_codes は (num_main_audio, N) の定数トークン列。
+    必要長に足りなければ時間方向に繰り返す。
+    """
+    assert num_streams >= 1 + num_main_audio
+    n_user = num_streams - 1 - num_main_audio
+
+    def tile(codes: np.ndarray, length: int) -> np.ndarray:
+        codes = np.asarray(codes)
+        assert codes.ndim == 2, f"codes must be 2D, got {codes.ndim}D"
+        if length <= 0:
+            return codes[:, :0]
+        reps = -(-length // codes.shape[1])
+        return np.tile(codes, (1, reps))[:, :length]
+
+    role_text_ids = list(role_text_ids)
+    Tv = int(np.asarray(voice_audio_codes).shape[1]) if voice_audio_codes is not None else 0
+    Lt = len(role_text_ids)
+    # 区切りは role text の両側
+    text_seg = 1 + Lt + 1 if Lt > 0 else 0
+    pause_a = pause_frames if Tv > 0 else 0          # voice と text の間
+    pause_b = pause_frames                            # text と本編の間
+    prompt_len = Tv + pause_a + text_seg + pause_b
+    assert prompt_len > 0, "empty system prompt"
+
+    prefix = np.empty((num_streams, prompt_len), dtype=dtype)
+    prefix[0, :] = text_padding_token_id
+    # agent 音声は既定で無音、user 音声は全区間サイン波
+    prefix[1 : 1 + num_main_audio, :] = tile(silence_codes, prompt_len).astype(dtype)
+    if n_user > 0:
+        prefix[1 + num_main_audio :, :] = tile(sine_codes, prompt_len)[:n_user].astype(dtype)
+
+    col = 0
+    if Tv > 0:
+        prefix[1 : 1 + num_main_audio, col : col + Tv] = np.asarray(voice_audio_codes, dtype=dtype)
+        col += Tv + pause_a
+    if Lt > 0:
+        prefix[0, col] = delimiter_text_id
+        prefix[0, col + 1 : col + 1 + Lt] = np.array(role_text_ids, dtype=dtype)
+        prefix[0, col + 1 + Lt] = delimiter_text_id
+        col += text_seg
+    col += pause_b
+    assert col == prompt_len, f"{col} != {prompt_len}"
+    return prefix
+
+
 def preprocess_function_with_system_prompt(
     batched_examples: dict[str, list[Any]],
     speakers: list[str],
@@ -330,6 +409,100 @@ def preprocess_function_with_system_prompt(
         masked_labels.append(label)
 
     # 5. filter out short streams (keep streams and labels aligned)
+    if min_length is not None:
+        keep = [k for k, s in enumerate(list_of_streams) if s.shape[1] >= min_length]
+        list_of_streams = [list_of_streams[k] for k in keep]
+        masked_labels = [masked_labels[k] for k in keep]
+        list_of_prompt_len = [list_of_prompt_len[k] for k in keep]
+
+    return {
+        "streams": list_of_streams,
+        "labels": masked_labels,
+        "num_streams": [s.shape[0] for s in list_of_streams],
+        "num_frames": [s.shape[1] for s in list_of_streams],
+        "prompt_len": list_of_prompt_len,
+    }
+
+
+def preprocess_function_with_system_prompt_v2(
+    batched_examples: dict[str, list[Any]],
+    speakers: list[str],
+    max_length: int | None,
+    min_length: int | None,
+    delays: list[int],
+    initial_token_ids: list[int],
+    padding_token_ids: list[int],
+    zero_token_id: int,
+    silence_codes: Any,
+    sine_codes: Any,
+    delimiter_text_id: int,
+    num_main_audio: int = 8,
+    pause_frames: int = 6,
+    prompt_text_key: str = "prompt_text_ids",
+    prompt_audio_key: str = "prompt_audio",
+) -> dict[str, list[Any]]:
+    """論文 Fig.1 準拠版。build_system_prompt_prefix_v2 を使う以外は
+    preprocess_function_with_system_prompt と同一（loss マスクの取り方も同じ）。"""
+    num_streams = len(initial_token_ids)
+    text_pad = padding_token_ids[0]
+    audio_pad = padding_token_ids[1]
+    num_examples = len(batched_examples[speakers[0]])
+    silence_codes = np.asarray(silence_codes)
+    sine_codes = np.asarray(sine_codes)
+
+    list_of_dialogue = main_speaker_streams(
+        batched_examples=batched_examples, speakers=speakers
+    )
+
+    list_of_streams: list[np.ndarray] = []
+    list_of_prompt_len: list[int] = []
+    for s_idx in range(len(speakers)):
+        for e_idx in range(num_examples):
+            dialogue = list_of_dialogue[s_idx * num_examples + e_idx]
+            role_text_ids = batched_examples[prompt_text_key][e_idx]
+            voice = None
+            if prompt_audio_key in batched_examples:
+                v = batched_examples[prompt_audio_key][e_idx]
+                if v is not None:
+                    voice = np.asarray(v)
+            prefix = build_system_prompt_prefix_v2(
+                role_text_ids=role_text_ids,
+                voice_audio_codes=voice,
+                num_streams=num_streams,
+                num_main_audio=num_main_audio,
+                text_padding_token_id=text_pad,
+                audio_padding_token_id=audio_pad,
+                silence_codes=silence_codes,
+                sine_codes=sine_codes,
+                delimiter_text_id=delimiter_text_id,
+                pause_frames=pause_frames,
+                dtype=dialogue.dtype,
+            )
+            combined = np.concatenate([prefix, dialogue], axis=1)
+            if max_length is not None and combined.shape[1] > max_length:
+                combined = combined[:, :max_length]
+            list_of_streams.append(combined)
+            list_of_prompt_len.append(prefix.shape[1])
+
+    list_of_streams = delay_and_pad_streams(
+        list_of_streams=list_of_streams,
+        delays=delays,
+        initial_token_ids=initial_token_ids,
+        padding_token_ids=padding_token_ids,
+    )
+    list_of_labels = make_streams_labels(
+        list_of_streams=list_of_streams,
+        initial_token_ids=initial_token_ids,
+        zero_token_id=zero_token_id,
+    )
+    masked_labels = []
+    for label, prompt_len in zip(list_of_labels, list_of_prompt_len):
+        label = label.copy()
+        for i in range(label.shape[0]):
+            end = min(1 + delays[i] + prompt_len, label.shape[1])
+            label[i, :end] = zero_token_id
+        masked_labels.append(label)
+
     if min_length is not None:
         keep = [k for k, s in enumerate(list_of_streams) if s.shape[1] >= min_length]
         list_of_streams = [list_of_streams[k] for k in keep]
@@ -448,3 +621,161 @@ class DataCollator:
             labels=labels,
         )
         return batch
+
+
+# --- テキストのみバッチ（finetune_mono_text.py から移植） -------------------
+# 全二重（2話者・user stream 有）の学習にテキストのみのバッチを混ぜるために、
+# finetune_mono_text.py にあった機構を utils 側へ移した。移植元は単一話者専用
+# （check_mono_args が moshi_speakers != ["A"] と model_user_stream を弾く）
+# だったが、テキストバッチは音声ストリームを持たず text_emb -> transformer ->
+# text_linear だけを通るので、話者数やユーザーストリームとは独立に使える。
+#
+# data_utils.py 側の Batch は kana_ids を持ち utils 側と非互換なので、
+# クラスをそのまま import せず、utils の Batch に合わせて置き直している。
+
+
+@dataclass
+class TextBatch(Batch):
+    """音声を持たないバッチ。forward の分岐で見分けるために型を分ける。"""
+
+    def to(self, device: torch.device) -> "TextBatch":
+        return TextBatch(
+            example_ids=self.example_ids,
+            input_ids=self.input_ids.to(device),
+            text_attention_mask=self.text_attention_mask.to(device),
+            labels=self.labels.to(device),
+        )
+
+
+class DataCollatorWithTextBatch(DataCollator):
+    """音声バッチとテキストバッチのどちらでも受けられる collator。"""
+
+    def __call__(self, examples: list[dict[str, Any]]) -> Batch | TextBatch:
+        if examples[0].get("streams") is not None:
+            return super().__call__(examples)
+        # テキストのみ: (batch, seq_len) の 2 次元。長さを揃えて padding する
+        streams = [e["text_stream"] for e in examples]
+        max_len = max(len(s) for s in streams)
+        input_ids = torch.full((len(streams), max_len), self.zero_token_id,
+                               dtype=torch.long)
+        mask = torch.zeros((len(streams), max_len), dtype=torch.long)
+        for k, s in enumerate(streams):
+            input_ids[k, : len(s)] = torch.tensor(s, dtype=torch.long)
+            mask[k, : len(s)] = 1
+        labels = input_ids.clone()
+        # text prompt の領域を損失から外す（音声側が system prompt をマスクするのと同じ）。
+        # zero_token_id は text_forward() の ignore_index かつ non_pad 判定の除外対象。
+        # prompt_len が無い/0 のときは何もしない＝2026-09-02 までの動作。
+        for k, e in enumerate(examples):
+            n = int(e.get("prompt_len") or 0)
+            if n > 0:
+                labels[k, :n] = self.zero_token_id
+        return TextBatch(
+            example_ids=[e.get("example_id") for e in examples],
+            input_ids=input_ids,
+            text_attention_mask=mask,
+            labels=labels,
+        )
+
+
+class AlternatingDatasetSampler(BatchSampler):
+    """
+    Sampling from two datasets alternatively in each batch.
+    Args:
+        base_dataset_indices (list[int]): The indices of the base dataset.
+        alt_dataset_indices (list[int]): The indices of the alternative dataset.
+        base_ratio (int): The number of batches to sample from the base dataset 
+            before sampling one batch from the alternative dataset.
+        base_batch_size (int): The batch size for the base dataset.
+        alt_batch_size (int): The batch size for the alternative dataset.
+    """
+    def __init__(
+            self,
+            base_dataset_indices: list[int],
+            alt_dataset_indices: list[int],
+            base_ratio: int,
+            batch_size: int,
+            num_processes: int,
+            drop_last: bool = False,
+            seed: int = 0,
+        ):
+        self.base_indices = base_dataset_indices
+        self.alt_indices = alt_dataset_indices
+        self.base_ratio = base_ratio
+
+        self.batch_size = batch_size
+        self.num_processes = num_processes
+        self.drop_last = drop_last
+
+        self.seed = seed
+        self.epoch = 0
+
+
+        # calculate the number of global batches
+        self.global_batch_size = self.batch_size * self.num_processes
+        self.num_base_global_batches = len(self.base_indices) // self.global_batch_size
+        if len(self.base_indices) % self.global_batch_size > 0 and not self.drop_last:
+            self.num_base_global_batches += 1
+        self.num_alt_global_batches = self.num_base_global_batches // self.base_ratio
+
+    def set_epoch(self, epoch: int) -> None:
+        """エポックごとに並びを変える。呼ばれないと全エポックで同じ順序になる。"""
+        self.epoch = epoch
+
+    def _shuffle_indices(self, indices: list[int]) -> list[int]:
+        """
+        Epoch-specific shuffling of indices.
+        """
+        rng = np.random.RandomState(self.seed + self.epoch)
+        return rng.permutation(indices).tolist()
+    
+    def __len__(self) -> int:
+        return (
+            self.num_base_global_batches + self.num_alt_global_batches
+        ) * self.num_processes
+
+    def __iter__(self) -> Iterator[list[int]]:
+        base_indices = self._shuffle_indices(self.base_indices)
+        alt_indices = self._shuffle_indices(self.alt_indices)
+
+        # adjust the number of base indices
+        global_batch_size = self.batch_size * self.num_processes
+        num_needed_base_indices = global_batch_size * self.num_base_global_batches
+        if len(base_indices) < num_needed_base_indices:
+            # fill the last batch with the first indices
+            base_indices += base_indices[:num_needed_base_indices - len(base_indices)]
+        elif len(base_indices) > num_needed_base_indices:
+            base_indices = base_indices[:num_needed_base_indices]
+
+        # adjust the number of alternative indices
+        num_needed_alt_indices = global_batch_size * self.num_alt_global_batches
+        if len(alt_indices) < num_needed_alt_indices:
+            # repeat the alternative dataset until it has enough batches
+            num_repeats = -(-num_needed_alt_indices // len(alt_indices))
+            alt_indices = np.tile(alt_indices, num_repeats).tolist()
+        if len(alt_indices) > num_needed_alt_indices:
+            alt_indices = alt_indices[:num_needed_alt_indices]
+        
+        # split the global batches
+        global_base_batches = np.array(base_indices).reshape(
+            self.num_base_global_batches, global_batch_size
+        ).tolist()
+        global_alt_batches = np.array(alt_indices).reshape(
+            self.num_alt_global_batches, global_batch_size
+        ).tolist()
+
+        # merge the base and alternative batches
+        global_batches = []
+        alt_global_batch_idx = 0
+        for global_base_batch_idx, global_base_batch in enumerate(global_base_batches):
+            global_batches.append(global_base_batch)
+            if (global_base_batch_idx+1) % self.base_ratio == 0:
+                global_batches.append(global_alt_batches[alt_global_batch_idx])
+                alt_global_batch_idx += 1
+        
+        # yield batches
+        for global_batch in global_batches:
+            for process_id in range(self.num_processes):
+                yield global_batch[process_id*self.batch_size:(process_id+1)*self.batch_size]
+        
+        self.epoch += 1
